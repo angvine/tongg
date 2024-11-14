@@ -1,0 +1,232 @@
+/* src/pages/TicTacToe.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--tg-theme-text-color);
+  text-align: center;
+  margin-bottom: 8px;
+  background: linear-gradient(45deg, var(--tg-theme-button-color), #0088cc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: var(--tg-theme-secondary-bg-color);
+  padding: 12px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.cell {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: bold;
+  background: var(--tg-theme-bg-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--tg-theme-text-color);
+  border: 2px solid transparent;
+}
+
+.cell:hover:not(.filled) {
+  border-color: var(--tg-theme-button-color);
+  transform: scale(1.05);
+}
+
+.cell.filled {
+  animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.cell.x {
+  color: #FF6B6B;
+}
+
+.cell.o {
+  color: #4ECDC4;
+}
+
+.cell[data-player="X"] {
+  color: #0098EA;
+}
+
+.cell[data-player="O"] {
+  color: #95A5A6;
+}
+
+.cell[data-player="🌟"] {
+  color: #FFD700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.cell[data-player="🎀"] {
+  color: #FF69B4;
+  text-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+}
+
+.status {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color);
+  padding: 12px 20px;
+  background: var(--tg-theme-secondary-bg-color);
+  border-radius: 12px;
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--tg-theme-secondary-bg-color);
+  border-radius: 16px;
+  animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.resultText {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color);
+  text-align: center;
+}
+
+.button {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-button-text-color);
+  background: var(--tg-theme-button-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.button:hover {
+  transform: scale(1.05);
+}
+
+.scoreBoard {
+  display: flex;
+  gap: 24px;
+  font-size: 18px;
+  color: var(--tg-theme-text-color);
+  margin-bottom: 16px;
+}
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.scoreLabel {
+  color: var(--tg-theme-hint-color);
+  font-size: 14px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popIn {
+  0% { 
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.winningCell {
+  animation: wiggle 0.5s ease-in-out;
+  background: rgba(var(--tg-theme-button-color-rgb), 0.1);
+}
+
+.cell:not(:disabled):hover {
+  background: rgba(0, 152, 234, 0.1);
+}
+
+.cell:disabled {
+  opacity: 1;
+}
+
+.gameOver {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.resultText {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color);
+}
+
+.status {
+  font-size: 15px;
+  color: var(--tg-theme-hint-color);
+  padding: 8px 0;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.playAgainBtn {
+  background: #0098EA;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.playAgainBtn:hover {
+  opacity: 0.8;
+}

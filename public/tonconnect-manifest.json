@@ -1,5 +1,7 @@
 {
-  "url": "https://ton.vote",
-  "name": "TON Vote",
-  "iconUrl": "https://ton.vote/logo.png"
+  "url": "https://gmaes.ton.gg", 
+  "name": "TON Good Games",
+  "iconUrl": "https://ton.gg/logo.png",
+  "termsOfUsePath": "terms-of-use",
+  "privacyPolicyPath": "privacy-policy"
 }

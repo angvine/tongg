@@ -1,3 +1,14 @@
+/* src/index.css */
+:root {
+  --ton-blue: #0098EA;
+  --ton-dark-blue: #045981;
+  --ton-light-blue: #6AB3F3;
+  
+  --tg-theme-button-color: var(--ton-blue);
+  --tg-theme-button-text-color: #FFFFFF;
+  --tg-theme-link-color: var(--ton-light-blue);
+}
+
 body {
   background: var(--tg-theme-secondary-bg-color, white);
   padding: 0;

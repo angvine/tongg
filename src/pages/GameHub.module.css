@@ -1,0 +1,130 @@
+/* src/pages/GameHub.module.css */
+.container {
+  padding: 20px;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.title {
+  font-size: clamp(28px, 5vw, 36px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--tg-theme-text-color);
+  margin-bottom: 12px;
+  background: linear-gradient(45deg, var(--tg-theme-button-color), #0088cc);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+  font-size: clamp(16px, 3vw, 20px);
+  color: var(--tg-theme-hint-color);
+  line-height: 1.4;
+  margin-bottom: 32px;
+}
+
+.gameGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+  padding: 16px;
+}
+
+.gameCard {
+  padding: clamp(16px, 4vw, 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(
+    135deg,
+    var(--tg-theme-bg-color),
+    var(--tg-theme-secondary-bg-color)
+  );
+  border-radius: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.5s ease-out;
+}
+
+.gameCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.gameIcon {
+  font-size: clamp(28px, 6vw, 36px);
+  width: clamp(56px, 12vw, 72px);
+  height: clamp(56px, 12vw, 72px);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  transition: transform 0.3s ease;
+}
+
+.gameCard:hover .gameIcon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.gameInfo {
+  flex: 1;
+}
+
+.gameTitle {
+  font-size: clamp(18px, 4vw, 22px);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  color: var(--tg-theme-text-color);
+}
+
+.gameDescription {
+  font-size: clamp(14px, 2.5vw, 16px);
+  line-height: 1.5;
+  color: var(--tg-theme-hint-color);
+  margin-bottom: 16px;
+}
+
+.playButton {
+  font-size: clamp(14px, 3vw, 16px);
+  font-weight: 600;
+  padding: 12px 24px;
+  width: 100%;
+  border-radius: 12px;
+  background: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
+  transition: transform 0.2s ease;
+}
+
+.playButton:hover {
+  transform: scale(1.02);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

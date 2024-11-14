@@ -6,6 +6,15 @@ import { LaunchParamsPage } from '@/pages/LaunchParamsPage.tsx';
 import { ThemeParamsPage } from '@/pages/ThemeParamsPage.tsx';
 import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
 
+import { GameHub } from '@/pages/GameHub';
+import { TicTacToe } from '@/pages/TicTacToe';
+import { Chess } from '@/pages/Chess';
+import { MemoryMatch } from '@/pages/MemoryMatch';
+import { Poker } from '@/pages/Poker';
+import { NumberMind } from '@/pages/NumberMind';
+import { DotsAndBoxes } from '@/pages/DotsAndBoxes';
+
+
 interface Route {
   path: string;
   Component: ComponentType;
@@ -14,6 +23,14 @@ interface Route {
 }
 
 export const routes: Route[] = [
+  { path: '/', Component: GameHub, title: 'TON.gg Games' },
+  { path: '/games', Component: GameHub, title: 'Games' },
+  { path: '/games/tictactoe', Component: TicTacToe, title: 'Tic Tac Toe' },
+  { path: '/games/chess', Component: Chess, title: 'Chess' },
+  { path: '/games/memory', Component: MemoryMatch, title: 'Memory Match' },
+  { path: '/games/poker', Component: Poker, title: 'Poker' },
+  { path: '/games/numbermind', Component: NumberMind, title: 'Number Mind' },
+  { path: '/games/dotsandboxes', Component: DotsAndBoxes, title: 'Dots & Boxes' },
   { path: '/', Component: IndexPage },
   { path: '/init-data', Component: InitDataPage, title: 'Init Data' },
   { path: '/theme-params', Component: ThemeParamsPage, title: 'Theme Params' },
@@ -42,3 +59,11 @@ export const routes: Route[] = [
     ),
   },
 ];
+
+export const ROUTES = {
+  HOME: '/',
+  TICTACTOE: '/games/tictactoe',
+  INIT_DATA: '/init-data',
+  THEME_PARAMS: '/theme-params',
+  LAUNCH_PARAMS: '/launch-params'
+} as const;
