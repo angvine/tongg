@@ -22,6 +22,6 @@ export default defineConfig({
     // Exposes your dev server and makes it accessible for the devices in the same network.
     host: 'localhost',
     port: 8080, // Default HTTP port
-    https: true,
+    https: false,
   },
 });
