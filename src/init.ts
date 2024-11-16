@@ -21,7 +21,13 @@ export function init(debug: boolean): void {
 
   // Add Eruda if needed.
   debug && import('eruda')
-    .then((lib) => lib.default.init())
+    .then((lib) => {
+      lib.default.init();
+      // Add style to hide Eruda button
+      const style = document.createElement('style');
+      style.textContent = '#eruda { display: none !important; }';
+      document.head.appendChild(style);
+    })
     .catch(console.error);
 
   // Check if all required components are supported.

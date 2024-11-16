@@ -8,6 +8,11 @@ type Player = 'X' | 'O' | null;  // Change back to simple symbols
 type Board = Player[];
 
 export function TicTacToe() {
+  const symbols = {
+    'X': '✖',
+    'O': '⭘'
+  };
+
   const [board, setBoard] = useState<Board>(Array(9).fill(null));
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [gameOver, setGameOver] = useState(false);
@@ -120,11 +125,11 @@ export function TicTacToe() {
             <Button
               key={index}
               onClick={() => handleClick(index)}
-              className={styles.cell}
+              className={`${styles.cell} ${cell ? styles.filled : ''}`}
               disabled={!!cell || gameOver || !isPlayerTurn}
               data-player={cell}
             >
-              {cell}
+              {cell ? symbols[cell] : ''}
             </Button>
           ))}
         </div>
