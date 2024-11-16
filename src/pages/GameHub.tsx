@@ -60,8 +60,8 @@ export function GameHub() {
         <div className={styles.header}>
           <Text as="h1" className={styles.title}>TON Good Games</Text><br></br>
           <Text className={styles.subtitle}>Simple games to enjoy with AI</Text>
-          
-          {/* {!wallet ? (
+{/*           
+          {!wallet ? (
             <TonConnectButton className={styles.connectButton} />
           ) : (
             <Text className={styles.walletInfo}>

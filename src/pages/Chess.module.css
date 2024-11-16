@@ -35,7 +35,8 @@
 
 .cell {
   aspect-ratio: 1;
-  font-size: 48px; /* Increase font size for better visibility */
+  font-size: 52px; /* Larger size for classic look */
+  font-family: "Times New Roman", serif; /* Classic serif font */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,12 +119,31 @@
 /* Add these new styles for alternating cell colors */
 .cell:nth-child(odd) {
   background: linear-gradient(135deg,
-    color-mix(in srgb, var(--tg-theme-bg-color) 90%, white),
-    var(--tg-theme-bg-color));
+    color-mix(in srgb, skyblue 90%, white),
+    skyblue);
 }
 
 .cell:nth-child(even) {
   background: linear-gradient(135deg,
-    color-mix(in srgb, var(--tg-theme-secondary-bg-color) 90%, white),
-    var(--tg-theme-secondary-bg-color));
+    color-mix(in srgb, white 90%, skyblue),
+    white);
+}
+
+/* Add new styles for pieces */
+.whitepiece {
+  color: #ffffff;
+  text-shadow: 
+    0 0 2px #000,
+    0 0 4px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+}
+
+.blackpiece {
+  color: #1a1a1a;
+  text-shadow: 
+    0 0 2px #fff,
+    0 0 4px rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
 }

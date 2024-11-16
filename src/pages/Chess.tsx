@@ -167,8 +167,8 @@ export function Chess() {
   const [winner, setWinner] = useState<string | null>(null); // Added winner state
 
   // Helper function to get Unicode symbols for pieces
-  const getPieceSymbol = (piece: { type: string; color: string } | null): string => {
-    if (!piece) return '';
+  const getPieceSymbol = (piece: { type: string; color: string } | null): JSX.Element | null => {
+    if (!piece) return null;
     const symbols: Record<string, Record<string, string>> = {
       w: {
         p: '♙',
@@ -179,7 +179,7 @@ export function Chess() {
         k: '♔',
       },
       b: {
-        p: '♟︎',
+        p: '♟',
         r: '♜',
         n: '♞',
         b: '♝',
@@ -187,7 +187,11 @@ export function Chess() {
         k: '♚',
       },
     };
-    return symbols[piece.color][piece.type];
+    return (
+      <span className={piece.color === 'w' ? styles.whitepiece : styles.blackpiece}>
+        {symbols[piece.color][piece.type]}
+      </span>
+    );
   };
 
   // Update the board state and check game status
