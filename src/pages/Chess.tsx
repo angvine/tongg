@@ -5,6 +5,155 @@ import { Button, Text } from '@telegram-apps/telegram-ui';
 import { Chess as ChessLibrary, Move } from 'chess.js';
 import styles from './Chess.module.css';
 
+// Constants
+const PIECE_VALUES = {
+  p: 100,    // pawn
+  n: 320,    // knight
+  b: 330,    // bishop
+  r: 500,    // rook
+  q: 900,    // queen
+  k: 20000   // king
+};
+
+const ENDGAME_PIECE_VALUES = {
+  p: 1.2,  // Pawns become more valuable
+  n: 2.8,  // Knights slightly less valuable
+  b: 3.2,  // Bishops slightly more valuable
+  r: 5,
+  q: 9,
+  k: 100
+};
+
+// Board position evaluation bonuses
+const POSITION_BONUSES = {
+  p: [  // Pawn position bonuses
+    [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+    [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
+    [1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
+    [0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
+    [0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
+    [0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
+    [0.5,  1.0,  1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
+    [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
+  ]
+  // Add position bonuses for other pieces...
+};
+
+const isEndgame = (chess: ChessLibrary): boolean => {
+  const pieces = chess.board().flat().filter(p => p);
+  return pieces.length <= 12;
+};
+
+const evaluatePieceMobility = (chess: ChessLibrary, square: string, piece: any): number => {
+  const moves = chess.moves({ square, verbose: true });
+  const baseScore = moves.length * 0.1;
+  
+  // Bonus for controlling center squares
+  const centerMoves = moves.filter(move => 
+    ['d4','d5','e4','e5'].includes(move.to)
+  );
+  
+  return baseScore + (centerMoves.length * 0.2);
+};
+
+const quiescenceSearch = (chess: ChessLibrary, alpha: number, beta: number, depth: number): number => {
+  const standPat = evaluateBoard(chess);
+  if (depth === 0) return standPat;
+  
+  if (standPat >= beta) return beta;
+  if (alpha < standPat) alpha = standPat;
+
+  const captures = chess.moves({ verbose: true }).filter(move => move.captured);
+  
+  for (const move of captures) {
+    chess.move(move);
+    const score = -quiescenceSearch(chess, -beta, -alpha, depth - 1);
+    chess.undo();
+    
+    if (score >= beta) return beta;
+    if (score > alpha) alpha = score;
+  }
+  
+  return alpha;
+};
+
+// Simplified evaluation function
+function evaluateBoard(chess: ChessLibrary): number {
+  try {
+    let score = 0;
+    const board = chess.board();
+    
+    // Material evaluation
+    board.forEach((row) => {
+      row.forEach((piece) => {
+        if (piece) {
+          const value = PIECE_VALUES[piece.type] || 0;
+          score += piece.color === 'w' ? value : -value;
+        }
+      });
+    });
+
+    // Basic position evaluation
+    score += chess.moves().length * 0.1;
+    
+    // Checkmate detection
+    if (chess.isCheckmate()) {
+      return chess.turn() === 'w' ? -20000 : 20000;
+    }
+    
+    return score;
+  } catch (error) {
+    console.error('Evaluation error:', error);
+    return 0;
+  }
+}
+
+function findBestMove(chess: ChessLibrary, depth: number = 4): Move {
+  const moves = chess.moves({ verbose: true });
+  let bestMove = moves[0];
+  let bestScore = -Infinity;
+  
+  // Opening book check
+  const bookMove = getOpeningBookMove(chess);
+  if (bookMove) return bookMove;
+
+  for (const move of moves) {
+    chess.move(move);
+    const score = -negamax(chess, depth - 1, -Infinity, Infinity, -1);
+    chess.undo();
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+
+  return bestMove;
+}
+
+function negamax(chess: ChessLibrary, depth: number, alpha: number, beta: number, color: number): number {
+  if (depth === 0) {
+    return color * quiescenceSearch(chess, alpha, beta, 3);
+  }
+
+  const moves = chess.moves();
+  if (moves.length === 0) {
+    if (chess.isCheckmate()) return -Infinity * color;
+    return 0;
+  }
+
+  for (const move of moves) {
+    chess.move(move);
+    const score = -negamax(chess, depth - 1, -beta, -alpha, -color);
+    chess.undo();
+    
+    if (score >= beta) return beta;
+    alpha = Math.max(alpha, score);
+  }
+  
+  return alpha;
+}
+
 export function Chess() {
   // Initialize chess.js within useRef to persist across renders
   const chess = useRef(new ChessLibrary());
@@ -110,30 +259,44 @@ export function Chess() {
     }
   };
 
-  // AI makes a random valid move
+  // Simplified AI move function
   const aiMove = () => {
     try {
-      const moves = chess.current.moves({ verbose: true });
-      console.log("AI available moves:", moves);
-      
-      if (moves.length === 0) {
-        console.log("No moves available for AI.");
+      if (chess.current.isGameOver()) {
+        console.log('Game is over');
         return;
       }
-
-      const move = moves[Math.floor(Math.random() * moves.length)];
-      console.log(`AI executing move:`, move);
-      
-      const result = chess.current.move(move);
-      if (result) {
-        console.log(`AI move successful:`, result);
-        updateBoard();
-      } else {
-        console.error("AI move failed to execute");
+  
+      const moves = chess.current.moves();
+      if (moves.length === 0) {
+        console.log('No legal moves');
+        return;
       }
+  
+      let bestMove = null;
+      let bestScore = -Infinity;
+  
+      // Simple one-ply search
+      for (const move of moves) {
+        chess.current.move(move);
+        const score = -evaluateBoard(chess.current);
+        chess.current.undo();
+  
+        if (score > bestScore) {
+          bestScore = score;
+          bestMove = move;
+        }
+      }
+  
+      if (bestMove) {
+        chess.current.move(bestMove);
+        updateBoard();
+        console.log('AI moved:', bestMove);
+      }
+  
     } catch (error) {
-      console.error("Error during AI move:", error);
-      setStatus("AI move error occurred");
+      console.error('AI move error:', error);
+      setStatus('AI move error occurred');
     }
   };
 
