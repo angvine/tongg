@@ -75,10 +75,8 @@ Here, you can see the `Local` link, available locally, and `Network` links
 accessible to all devices in the same network with the current device.
 
 To view the application, you need to open the `Local`
-link (`https://localhost:5173/reactjs-template` in this example) in your
+link (`https://localhost:8080` in this example) in your
 browser:
-
-![Application](assets/application.png)
 
 It is important to note that some libraries in this template, such as
 `@telegram-apps/sdk`, are not intended for use outside of Telegram.
