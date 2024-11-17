@@ -14,7 +14,7 @@ export function GameHub() {
       id: 'tictactoe',
       title: 'Tic Tac Toe',
       description: 'Challenge the AI in classic X\'s and O\'s',
-      icon: '🎮',
+      icon: '#️⃣',  // Changed from ❌ to #️⃣ (hash/grid)
       color: '#FF6B6B'
     },
     {
@@ -28,14 +28,14 @@ export function GameHub() {
       id: 'memory',
       title: 'Memory Match',
       description: 'Test your memory with card pairs',
-      icon: '🃏',
-      color: '#45B7D1'
+      icon: '🎭',
+      color: '#FFB6C1'  // Changed from #45B7D1 to light pink for better contrast
     },
     {
       id: 'poker',
       title: 'Poker',
       description: 'Texas Hold\'em against the dealer',
-      icon: '🎲',
+      icon: '🃏',  // Changed from 🎰 to 🃏 (Joker Card)
       color: '#FF9F43'
     },
     {
