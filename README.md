@@ -1,7 +1,7 @@
 
 # **TON Good Games 🎮**
 
-## _**'Enjoy simple games with AI!'**_
+## >_**'Enjoy simple games with AI!'**_
 
 ### **Project Overview**
 
@@ -149,13 +149,6 @@ environment. This trick convinces the application that it is running in a
 Telegram-based environment. Therefore, be cautious not to use this function in
 production mode unless you fully understand its implications.
 
-> [!WARNING]
-> Because we are using self-signed SSL certificates, the Android and iOS
-> Telegram applications will not be able to display the application. These
-> operating systems enforce stricter security measures, preventing the Mini App
-> from loading. To address this issue, refer to
-> [this guide](https://docs.telegram-mini-apps.com/platform/getting-app-link#remote).
-
 
 #### Before Deploying
 
@@ -172,20 +165,6 @@ Then, run the deployment process, using the `deploy` script:
 npm run deploy
 ```
 
-## TON Connect
-
-This boilerplate utilizes
-the [TON Connect](https://docs.ton.org/develop/dapps/ton-connect/overview)
-project to demonstrate how developers can integrate functionality related to TON
-cryptocurrency.
-
-The TON Connect manifest used in this boilerplate is stored in the `public`
-folder, where all publicly accessible static files are located. Remember
-to [configure](https://docs.ton.org/develop/dapps/ton-connect/manifest) this
-file according to your project's information.
-
 ## Useful Links
 
-- [Platform documentation](https://docs.telegram-mini-apps.com/)
-- [@telegram-apps/sdk-react documentation](https://docs.telegram-mini-apps.com/packages/telegram-apps-sdk-react)
-- [Telegram developers community chat](https://t.me/devs)
+- [TON Good Games community chat](https://t.me/tongoodgames)
