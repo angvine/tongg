@@ -32,6 +32,7 @@ export function Poker() {
     minRaise: 0,
     maxRaise: 0
   });
+  const [aiSpeech, setAiSpeech] = useState<string>('');
 
   const startNewGame = () => {
     const newDeck = poker.createDeck();
@@ -145,6 +146,25 @@ export function Poker() {
   };
 
   const handleAIAction = (action: 'check' | 'call' | 'raise' | 'fold', raiseAmount?: number) => {
+    // Set AI speech based on action
+    switch (action) {
+      case 'check':
+        setAiSpeech("I'll check.");
+        break;
+      case 'call':
+        setAiSpeech(`I'll call $${currentBet - aiBet}.`);
+        break;
+      case 'raise':
+        setAiSpeech(`I raise to $${raiseAmount}!`);
+        break;
+      case 'fold':
+        setAiSpeech("I fold...");
+        break;
+    }
+
+    // Clear speech after 2 seconds
+    setTimeout(() => setAiSpeech(''), 2000);
+
     switch (action) {
       case 'check':
         if (currentBet === aiBet) {
@@ -398,6 +418,7 @@ export function Poker() {
 
           <div className={styles.dealerArea}>
             <Text variant="body">AI's Cards</Text>
+            {aiSpeech && <div className={styles.aiSpeechBubble}>{aiSpeech}</div>}
             <div className={styles.hand}>
               {aiHand.map((card, index) => (
                 <div 

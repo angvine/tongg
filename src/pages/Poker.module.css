@@ -1,10 +1,12 @@
 :root {
-  --telegram-blue: #0088cc;
-  --telegram-blue-light: #32a7df;
-  --telegram-bg: #ffffff;
-  --table-green: #1b7d5d;
-  --table-border: #24917a;
-  --gold: #ffd700;
+  --ton-blue: #0098EA;
+  --ton-blue-dark: #0088CC;
+  --ton-blue-light: #32A9E1;
+  --ton-bg: #FFFFFF;
+  --table-blue: #0088CC;
+  --table-border: #0098EA;
+  --accent-color: #31B8F4;
+  --gold: #FFC93D;
 }
 
 /* src/pages/Poker.module.css */
@@ -23,7 +25,7 @@
 }
 
 .pokerTable {
-  background: var(--table-green);
+  background: var(--table-blue);
   border-radius: 0;                    /* Remove rounded corners */
   padding: 16px;
   margin: 8px auto;
@@ -74,7 +76,7 @@
 }
 
 .dealerArea, .playerArea {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 136, 204, 0.2); /* Using TON blue with opacity */
   padding: 8px;                          /* Reduced from 12px */
   border-radius: 12px;                   /* Reduced from 16px */
   margin: 4px auto;                      /* Reduced from 8px */
@@ -82,10 +84,35 @@
   max-width: 180px;                      /* Reduced from 220px */
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
+  position: relative; /* Add this */
+}
+
+.dealerArea {
+  background: rgba(0, 136, 204, 0.2);
+  padding: 8px;
+  border-radius: 12px;
+  margin: 4px auto;
+  width: 45%;                        /* Reduced from 60% */
+  max-width: 120px;                  /* Reduced from 140px */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  position: relative;
+  text-align: center;                /* Center text content */
+}
+
+.dealerArea .hand {
+  gap: 1px;                          /* Reduced from 2px */
+  margin-top: 4px;                   /* Add some space after the label */
+}
+
+.dealerArea .card {
+  width: 28px;                       /* Reduced from 32px */
+  height: 38px;                      /* Reduced from 44px */
+  font-size: 14px;                   /* Reduced from 16px */
 }
 
 .communityArea {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 136, 204, 0.25); /* Using TON blue with opacity */
   padding: 12px;                         /* Reduced from 16px */
   border-radius: 16px;                   /* Reduced from 20px */
   margin: 0 auto;
@@ -135,7 +162,7 @@
 
 /* Card backside styles */
 .cardBack {
-  background: linear-gradient(135deg, var(--telegram-blue) 0%, var(--telegram-blue-light) 100%);
+  background: linear-gradient(135deg, var(--ton-blue) 0%, var(--ton-blue-light) 100%);
   width: 100%;
   height: 100%;
   position: absolute;
@@ -208,11 +235,11 @@
 
 /* Trump card styles */
 .card[data-trump="true"] {
-  background: linear-gradient(135deg, #fff2d9 0%, #fff 100%);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: linear-gradient(135deg, #E8F6FE 0%, #fff 100%);
+  border: 1px solid rgba(0, 152, 234, 0.3);
   box-shadow: 
-    0 2px 8px rgba(255, 215, 0, 0.2),
-    0 0 4px rgba(255, 215, 0, 0.1),
+    0 2px 8px rgba(0, 152, 234, 0.2),
+    0 0 4px rgba(0, 152, 234, 0.1),
     inset 0 0 2px rgba(255, 255, 255, 0.9);
   animation: glowPulse 2s infinite;
 }
@@ -220,8 +247,8 @@
 .card[data-trump="true"]:hover {
   transform: translateY(-4px) scale(1.05);
   box-shadow: 
-    0 4px 12px rgba(255, 215, 0, 0.3),
-    0 0 8px rgba(255, 215, 0, 0.2),
+    0 4px 12px rgba(0, 152, 234, 0.3),
+    0 0 8px rgba(0, 152, 234, 0.2),
     inset 0 0 2px rgba(255, 255, 255, 0.9);
 }
 
@@ -242,14 +269,14 @@
 @keyframes glowPulse {
   0%, 100% { 
     box-shadow: 
-      0 2px 8px rgba(255, 215, 0, 0.2),
-      0 0 4px rgba(255, 215, 0, 0.1),
+      0 2px 8px rgba(0, 152, 234, 0.2),
+      0 0 4px rgba(0, 152, 234, 0.1),
       inset 0 0 2px rgba(255, 255, 255, 0.9);
   }
   50% { 
     box-shadow: 
-      0 2px 12px rgba(255, 215, 0, 0.4),
-      0 0 8px rgba(255, 215, 0, 0.2),
+      0 2px 12px rgba(0, 152, 234, 0.4),
+      0 0 8px rgba(0, 152, 234, 0.2),
       inset 0 0 2px rgba(255, 255, 255, 0.9);
   }
 }
@@ -269,7 +296,7 @@
   font-size: 13px;                       /* Reduced from 14px */
   font-weight: 500;
   background: rgba(255, 255, 255, 0.9);
-  color: var(--table-green);
+  color: var(--ton-blue-dark);
   border: none;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -283,14 +310,14 @@
 
 .result {
   position: absolute;
-  top: 50%;
+  top: 60%;  /* Changed from 50% to move it down */
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  padding: 12px 24px;
+  padding: 6px 12px;  /* Even smaller padding */
   border-radius: 8px;
-  font-size: 14px;
-  color: var(--telegram-blue);
+  font-size: 8px;     /* Reduced from 10px to 8px */
+  color: var(--ton-blue);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 10;
 }
@@ -384,4 +411,43 @@
   font-size: 12px;                       /* Reduced from 13px */
   color: var(--gold);
   border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.aiSpeechBubble {
+  position: absolute;
+  left: -75px;                       /* Adjusted for smaller deck */
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--ton-blue-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 70px;                   /* Smaller bubble width */
+  z-index: 2;
+  animation: fadeIn 0.3s ease-out;
+  white-space: nowrap;  /* Keep text in one line */
+}
+
+.aiSpeechBubble::after {
+  content: '';
+  position: absolute;
+  right: -6px;          /* Adjust arrow position */
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 6px solid white;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+/* Add media query for smaller screens */
+@media (max-width: 480px) {
+  .aiSpeechBubble {
+    left: auto;
+    right: 105%;        /* Position relative to container width */
+    max-width: 80px;    /* Smaller on mobile */
+    font-size: 12px;    /* Smaller text on mobile */
+    padding: 6px 10px;  /* Smaller padding on mobile */
+  }
 }
