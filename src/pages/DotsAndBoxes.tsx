@@ -28,6 +28,120 @@ const CHARACTERS = {
 
 const BOARD_SIZE = 3; // Fixed board size
 
+const getBoardState = (lines: Line[], boxes: Box[][]) => ({
+  lines: lines.map(l => ({ ...l })),
+  boxes: boxes.map(row => row.map(box => ({ ...box })))
+});
+
+const getAdjacentBoxes = (line: Line): [number, number][] => {
+  const boxes: [number, number][] = [];
+  if (line.isHorizontal) {
+    if (line.row > 0) boxes.push([line.row - 1, line.col]);
+    if (line.row < BOARD_SIZE) boxes.push([line.row, line.col]);
+  } else {
+    if (line.col > 0) boxes.push([line.row, line.col - 1]);
+    if (line.col < BOARD_SIZE) boxes.push([line.row, line.col]);
+  }
+  return boxes;
+};
+
+const evaluateMove = (line: Line, lines: Line[], boxes: Box[][]): number => {
+  let score = 0;
+
+  // Check for immediate box completion
+  const adjacentBoxes = getAdjacentBoxes(line);
+  for (const [row, col] of adjacentBoxes) {
+    const boxLines = getBoxLines(row, col, lines);
+    const completedCount = boxLines.filter(l => l.owner).length;
+
+    if (completedCount === 3) {
+      score += 100; // Immediate box completion
+    } else if (completedCount === 2) {
+      score -= 80; // Avoid giving opponent easy boxes
+    } else if (completedCount === 1) {
+      score += 10; // Good strategic position
+    }
+  }
+
+  // Check for chain prevention
+  const chainRisk = evaluateChainRisk(line, lines, boxes);
+  score -= chainRisk * 50;
+
+  return score;
+};
+
+const evaluateChainRisk = (line: Line, lines: Line[], boxes: Box[][]): number => {
+  let risk = 0;
+  const adjacentBoxes = getAdjacentBoxes(line);
+
+  for (const [row, col] of adjacentBoxes) {
+    const surroundingBoxes = getSurroundingBoxes(row, col);
+    for (const [adjRow, adjCol] of surroundingBoxes) {
+      if (isBoxPartOfChain(adjRow, adjCol, lines, boxes)) {
+        risk++;
+      }
+    }
+  }
+
+  return risk;
+};
+
+const isBoxPartOfChain = (row: number, col: number, lines: Line[], boxes: Box[][]): boolean => {
+  if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return false;
+
+  const boxLines = getBoxLines(row, col, lines);
+  const completedCount = boxLines.filter(l => l.owner).length;
+  return completedCount === 3 && !boxes[row][col].completed;
+};
+
+const getSurroundingBoxes = (row: number, col: number): [number, number][] => {
+  return [
+    [row - 1, col], // top
+    [row + 1, col], // bottom
+    [row, col - 1], // left
+    [row, col + 1], // right
+  ].filter(([r, c]) =>
+    r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE
+  );
+};
+
+const getBoxesForLine = (line: Line): [number, number][] => {
+  const boxes: [number, number][] = [];
+  if (line.isHorizontal) {
+    if (line.row > 0) boxes.push([line.row - 1, line.col]);
+    if (line.row < BOARD_SIZE) boxes.push([line.row, line.col]);
+  } else {
+    if (line.col > 0) boxes.push([line.row, line.col - 1]);
+    if (line.col < BOARD_SIZE) boxes.push([line.row, line.col]);
+  }
+  return boxes;
+};
+
+const scoreMove = (line: Line, lines: Line[], boxes: Box[][]): number => {
+  let score = 0;
+  const boxPositions = getBoxesForLine(line);
+  
+  for (const [row, col] of boxPositions) {
+    // Count completed sides of each adjacent box
+    const completedSides = getCompletedSidesCount(row, col, lines);
+    if (completedSides === 3) {
+      score += 100; // Prioritize completing boxes
+    } else if (completedSides === 2) {
+      score -= 50; // Avoid setting up opponent
+    }
+  }
+  
+  return score;
+};
+
+const getCompletedSidesCount = (row: number, col: number, lines: Line[]): number => {
+  const boxLines = lines.filter(line => 
+    (line.isHorizontal && (line.row === row || line.row === row + 1) && line.col === col) ||
+    (!line.isHorizontal && (line.col === col || line.col === col + 1) && line.row === row)
+  );
+  return boxLines.filter(line => line.owner).length;
+};
+
 export function DotsAndBoxes() {
   // Game state
   const [lines, setLines] = useState<Line[]>([]);
@@ -189,17 +303,40 @@ export function DotsAndBoxes() {
   useEffect(() => {
     if (!isPlayerTurn && !isGameOver && !waitingForNextTurn) {
       const timer = setTimeout(() => {
-        const availableLines = lines.filter(line => !line.owner);
-        if (availableLines.length > 0) {
-          setWaitingForNextTurn(true);
+        try {
+          const availableLines = lines.filter(line => !line.owner);
+          if (availableLines.length === 0) return;
+
+          setIsAiThinking(true);
+          
+          // Find best move
+          const scoredMoves = availableLines.map(line => ({
+            line,
+            score: scoreMove(line, lines, boxes)
+          }));
+
+          // Sort by score
+          scoredMoves.sort((a, b) => b.score - a.score);
+          
+          // Add randomization for equal scores to make AI less predictable
+          const bestScore = scoredMoves[0].score;
+          const bestMoves = scoredMoves.filter(move => move.score === bestScore);
+          const selectedMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+          makeMove(selectedMove.line, 'ai');
+        } catch (error) {
+          console.error('AI move error:', error);
+          // Fallback to random move
           const randomLine = availableLines[Math.floor(Math.random() * availableLines.length)];
           makeMove(randomLine, 'ai');
+        } finally {
+          setIsAiThinking(false);
         }
-      }, 1000);
+      }, 500); // Reduced delay for better responsiveness
 
       return () => clearTimeout(timer);
     }
-  }, [isPlayerTurn, isGameOver, waitingForNextTurn, lines, makeMove]);
+  }, [isPlayerTurn, isGameOver, waitingForNextTurn, lines, boxes, makeMove]);
 
   // Initialize board on mount
   useEffect(() => {
