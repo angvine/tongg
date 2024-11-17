@@ -6,6 +6,12 @@ import { Button, Text } from '@telegram-apps/telegram-ui';
 import { PokerLogic, Card, GameStage } from './PokerLogic';
 import styles from './Poker.module.css';
 
+interface BettingState {
+  canCheck: boolean;
+  minRaise: number;
+  maxRaise: number;
+}
+
 export function Poker() {
   const [poker] = useState(() => new PokerLogic());
   const [deck, setDeck] = useState<Card[]>([]);
@@ -21,6 +27,11 @@ export function Poker() {
   const [aiChips, setAIChips] = useState(1000);
   const [playerBet, setPlayerBet] = useState(0);
   const [aiBet, setAIBet] = useState(0);
+  const [bettingState, setBettingState] = useState<BettingState>({
+    canCheck: true,
+    minRaise: 0,
+    maxRaise: 0
+  });
 
   const startNewGame = () => {
     const newDeck = poker.createDeck();
@@ -60,68 +71,129 @@ export function Poker() {
 
   const handleAITurn = async () => {
     setIsPlayerTurn(false);
-    
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const decision = Math.random();
+
+    const aiCanCheck = currentBet === aiBet;
     const callAmount = currentBet - aiBet;
+    const lastRaiseSize = currentBet - Math.min(playerBet, aiBet);
+    const minRaise = Math.max(currentBet + lastRaiseSize, 20);
+    const maxRaise = aiChips + aiBet;
     
-    if (communityCards.length >= 3) {
-      const aiVisibleCards = [...aiHand.map(card => ({...card, hidden: false})), ...communityCards];
-      const handStrength = poker.evaluateHand(aiVisibleCards).rank;
+    // Calculate hand strength and potential
+    const aiVisibleCards = [...aiHand.map(card => ({...card, hidden: false})), ...communityCards];
+    const handStrength = poker.evaluateHand(aiVisibleCards).rank;
+    const potOdds = callAmount / (pot + callAmount);
+    const position = gameStage === 'preflop' ? 'early' : 'late';
+    
+    // Enhanced decision making based on game stage
+    if (gameStage === 'preflop') {
+      // Preflop strategy
+      const hasAce = aiHand.some(card => card.value === 'A');
+      const hasKing = aiHand.some(card => card.value === 'K');
+      const hasHighPair = aiHand[0].value === aiHand[1].value && 
+        ['A', 'K', 'Q', 'J', '10'].includes(aiHand[0].value);
       
-      // More conservative AI logic
-      if (handStrength >= 4) { // Strong hand
-        if (aiChips >= currentBet * 2) {
-          handleAIAction('raise', currentBet * 2);
+      if (hasHighPair || (hasAce && hasKing)) {
+        // Strong starting hand - raise
+        handleAIAction('raise', Math.min(pot * 2, maxRaise));
+      } else if (hasAce || hasKing) {
+        // Decent hand - call or small raise
+        if (callAmount <= aiChips * 0.1) handleAIAction('call');
+        else handleAIAction('fold');
+      } else {
+        // Weak hand - check or fold
+        if (aiCanCheck) handleAIAction('check');
+        else if (callAmount <= 20) handleAIAction('call');
+        else handleAIAction('fold');
+      }
+    } else {
+      // Post-flop strategy
+      const strengthThreshold = {
+        flop: 2,   // Pair or better
+        turn: 3,   // Three of a kind or better
+        river: 4   // Straight or better
+      }[gameStage] || 2;
+
+      if (handStrength >= strengthThreshold) {
+        // Strong hand
+        const raiseAmount = Math.min(pot * (handStrength / 2), maxRaise);
+        if (raiseAmount >= minRaise) {
+          handleAIAction('raise', raiseAmount);
         } else {
           handleAIAction('call');
         }
-      } else if (handStrength >= 2) { // Medium hand
-        handleAIAction('call');
-      } else { // Weak hand
-        if (callAmount <= 20) { // Small bet, worth calling
+      } else if (handStrength >= strengthThreshold - 1) {
+        // Medium strength hand
+        if (potOdds < 0.3) {
+          if (aiCanCheck) handleAIAction('check');
+          else handleAIAction('call');
+        } else {
+          if (callAmount <= aiChips * 0.15) handleAIAction('call');
+          else handleAIAction('fold');
+        }
+      } else {
+        // Weak hand
+        if (aiCanCheck) {
+          handleAIAction('check');
+        } else if (potOdds < 0.2 && callAmount <= aiChips * 0.1) {
           handleAIAction('call');
         } else {
           handleAIAction('fold');
         }
       }
-    } else {
-      // Pre-flop decisions
-      if (callAmount <= 20 || decision < 0.7) {
-        handleAIAction('call');
-      } else {
-        handleAIAction('fold');
-      }
     }
   };
 
-  const handleAIAction = (action: 'call' | 'raise' | 'fold', raiseAmount?: number) => {
+  const handleAIAction = (action: 'check' | 'call' | 'raise' | 'fold', raiseAmount?: number) => {
     switch (action) {
+      case 'check':
+        if (currentBet === aiBet) {
+          advanceGameStage();
+        }
+        break;
+
       case 'call':
         const callAmount = currentBet - aiBet;
-        setAIChips(prev => prev - callAmount);
-        setAIBet(currentBet);
-        setPot(prev => prev + callAmount);
+        if (callAmount > aiChips) {
+          // All-in
+          const allInAmount = aiChips;
+          setAIChips(0);
+          setAIBet(aiBet + allInAmount);
+          setPot(prev => prev + allInAmount);
+        } else {
+          setAIChips(prev => prev - callAmount);
+          setAIBet(currentBet);
+          setPot(prev => prev + callAmount);
+        }
+        
         if (currentBet === playerBet) {
           advanceGameStage();
         } else {
           setIsPlayerTurn(true);
         }
         break;
-        
+      
       case 'raise':
-        if (raiseAmount) {
+        if (raiseAmount && raiseAmount >= currentBet * 2) {
           const actualRaise = Math.min(raiseAmount, aiChips + aiBet);
           const raiseIncrement = actualRaise - aiBet;
-          setAIChips(prev => prev - raiseIncrement);
-          setAIBet(actualRaise);
-          setPot(prev => prev + raiseIncrement);
-          setCurrentBet(actualRaise);
+          
+          if (raiseIncrement >= aiChips) {
+            // All-in
+            setAIChips(0);
+            setAIBet(aiBet + aiChips);
+            setPot(prev => prev + aiChips);
+            setCurrentBet(aiBet + aiChips);
+          } else {
+            setAIChips(prev => prev - raiseIncrement);
+            setAIBet(actualRaise);
+            setPot(prev => prev + raiseIncrement);
+            setCurrentBet(actualRaise);
+          }
           setIsPlayerTurn(true);
         }
         break;
-        
+      
       case 'fold':
         setPlayerChips(prev => prev + pot);
         setResult('AI folded. You win!');
@@ -173,49 +245,68 @@ export function Poker() {
   };
 
   const handleCall = () => {
+    if (!isPlayerTurn) return;
+    
     const callAmount = currentBet - playerBet;
     
-    if (isPlayerTurn) {
-      if (callAmount > playerChips) {
-        // Handle all-in logic here if needed
-        return;
-      }
-      
-      setPlayerChips(prev => prev - callAmount);
-      setPlayerBet(currentBet);
-      setPot(prev => prev + callAmount);
-      
-      if (currentBet === aiBet) {
-        advanceGameStage();
-      } else {
-        handleAITurn();
-      }
+    if (callAmount > playerChips) {
+      // All-in situation
+      const allInAmount = playerChips;
+      setPlayerChips(0);
+      setPlayerBet(playerBet + allInAmount);
+      setPot(prev => prev + allInAmount);
+      handleAITurn();
+      return;
+    }
+    
+    setPlayerChips(prev => prev - callAmount);
+    setPlayerBet(currentBet);
+    setPot(prev => prev + callAmount);
+    
+    if (currentBet === aiBet) {
+      advanceGameStage();
+    } else {
+      handleAITurn();
     }
   };
 
-  const handleRaise = (newBet: number) => {
-    const currentPlayer = isPlayerTurn ? 'player' : 'ai';
-    const availableChips = currentPlayer === 'player' ? playerChips : aiChips;
+  const handleCheck = () => {
+    if (!isPlayerTurn || !bettingState.canCheck) return;
     
-    if (!poker.validateBet(newBet, availableChips, currentBet)) {
+    if (currentBet === aiBet) {
+      advanceGameStage();
+    } else {
+      handleAITurn();
+    }
+  };
+
+  const handleRaise = (raiseAmount: number) => {
+    if (!isPlayerTurn) return;
+    
+    // Validate raise amount
+    if (raiseAmount < bettingState.minRaise || raiseAmount > bettingState.maxRaise) {
       return;
     }
-
-    const raiseAmount = newBet - (currentPlayer === 'player' ? playerBet : aiBet);
     
-    if (isPlayerTurn) {
-      setPlayerChips(prev => prev - raiseAmount);
-      setPlayerBet(newBet);
-      setPot(prev => prev + raiseAmount);
-      setCurrentBet(newBet);
+    const totalBet = raiseAmount;
+    const additionalAmount = totalBet - playerBet;
+    
+    if (additionalAmount > playerChips) {
+      // All-in situation
+      const allInAmount = playerChips;
+      setPlayerChips(0);
+      setPlayerBet(playerBet + allInAmount);
+      setPot(prev => prev + allInAmount);
+      setCurrentBet(playerBet + allInAmount);
       handleAITurn();
-    } else {
-      setAIChips(prev => prev - raiseAmount);
-      setAIBet(newBet);
-      setPot(prev => prev + raiseAmount);
-      setCurrentBet(newBet);
-      setIsPlayerTurn(true);
+      return;
     }
+    
+    setPlayerChips(prev => prev - additionalAmount);
+    setPlayerBet(totalBet);
+    setPot(prev => prev + additionalAmount);
+    setCurrentBet(totalBet);
+    handleAITurn();
   };
 
   const advanceGameStage = () => {
@@ -273,6 +364,24 @@ export function Poker() {
   useEffect(() => {
     startNewGame();
   }, []);
+
+  useEffect(() => {
+    updateBettingState();
+  }, [currentBet, playerBet, aiBet, playerChips, aiChips]);
+
+  const updateBettingState = () => {
+    // Can check only if no one has bet in this round
+    const canCheck = currentBet === playerBet;
+    
+    // Minimum raise must be at least the size of the previous raise
+    const lastRaiseSize = currentBet - Math.min(playerBet, aiBet);
+    const minRaise = Math.max(currentBet + lastRaiseSize, 20); // minimum 20 chips
+    
+    // Maximum raise is all remaining chips (all-in)
+    const maxRaise = playerChips + playerBet;
+
+    setBettingState({ canCheck, minRaise, maxRaise });
+  };
 
   return (
     <Page>
@@ -365,11 +474,18 @@ export function Poker() {
               isPlayerTurn ? (
                 <>
                   <Button onClick={handleFold}>Fold</Button>
-                  <Button onClick={() => handleCall()}>
-                    Call ${currentBet}
-                  </Button>
-                  <Button onClick={() => handleRaise(currentBet * 2)}>
-                    Raise to ${currentBet * 2}
+                  {bettingState.canCheck ? (
+                    <Button onClick={handleCheck}>Check</Button>
+                  ) : (
+                    <Button onClick={handleCall}>
+                      Call ${currentBet - playerBet}
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={() => handleRaise(bettingState.minRaise)}
+                    disabled={playerChips < bettingState.minRaise - playerBet}
+                  >
+                    Raise to ${bettingState.minRaise}
                   </Button>
                 </>
               ) : (
