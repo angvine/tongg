@@ -1,6 +1,6 @@
 # TON Good Games
 
-'Enjoy simple games with AI!'
+
 
 A Telegram Mini App that contains a collection of games where you can play simple games with AI on the TON network.
 
@@ -11,6 +11,80 @@ The app includes:
 - Poker - Texas Hold'em Poker against AI dealers
 - DotsAndBoxes - Classic dot and box drawing game against AI
 And more.
+
+
+# **TON Good Games 🎮**
+
+**'Enjoy simple games with AI!'**
+
+**Project Overview**
+TON Good Games is an innovative Telegram Mini App that brings engaging AI-powered gaming experiences to the TON ecosystem. Players can enjoy classic games enhanced with modern AI opponents, all while seamlessly integrating with TON blockchain technology.
+
+### The app includes:
+- TicTacToe: Classic tic-tac-toe with AI opponents using the minimax algorithm.
+- Chess: Chess implementation with AI opponents using the chess.js library.
+- Poker: Texas Hold'em Poker against AI dealers.
+- DotsAndBoxes: Classic dot and box drawing game against AI.
+- Memory Match: Pattern matching with flippable cards.
+- Number Mind: Code-breaking gameplay with exact and partial match feedback
+And stay tuned more.
+
+## **Key Features**
+
+### **🎯 AI-Powered Gaming**
+- Smart AI Opponents: Each game features carefully tuned AI algorithms:
+- Chess: Advanced evaluation and negamax search with quiescence
+- Tic-tac-toe: Unbeatable minimax algorithm
+- Poker: Strategic decision making based on hand strength and pot odds
+- Dots & Boxes: Position evaluation with chain prevention
+
+### 💎 TON Integration
+- Seamless TON Connect wallet integration
+- Game results stored on TON blockchain
+- Future potential for NFT rewards and tournaments
+
+###🎨 Polished User Experience
+- Beautiful, responsive Telegram UI components
+- Smooth animations and transitions
+- Intuitive touch controls
+- Real-time game state updates
+
+## Technical Innovation
+
+### Architecture
+- Built with React + TypeScript for type safety and maintainability
+- Vite for lightning-fast development and optimized builds
+- Clean component architecture with shared game logic
+
+### AI Implementation
+- Chess engine with position evaluation and look-ahead search
+- Poker AI with hand strength calculation and betting strategy
+- Adaptive difficulty levels in puzzle games
+
+### TON Integration
+- TonConnectButton for easy wallet connection
+- Smart contract interaction for storing game results
+- Efficient blockchain state management
+
+### Market Potential
+- Massive reach through Telegram's platform
+- Growing demand for blockchain gaming
+- Potential for tokenized rewards and tournaments
+- Easy expansion with new games and features
+
+### Future Development
+- Multiplayer support
+- Tournament system with Token prizes
+- NFT rewards for achievements
+- Additional games and AI improvements
+- Social features and leaderboards
+
+TON Good Games demonstrates how blockchain technology can enhance classic gaming experiences while maintaining simplicity and accessibility through the Telegram Mini Apps platform.
+
+[View Demo](https://games.ton.gg) | [GitHub Repository](https://github.com/angvine/tongg)
+
+
+# Developments & Services
 
 TON Good Games Telegram Mini App using the following technologies
 and libraries:
