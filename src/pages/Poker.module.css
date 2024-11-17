@@ -1,20 +1,68 @@
+:root {
+  --telegram-blue: #0088cc;
+  --telegram-blue-light: #32a7df;
+  --telegram-bg: #ffffff;
+  --table-green: #1b7d5d;
+  --table-border: #24917a;
+  --gold: #ffd700;
+}
+
 /* src/pages/Poker.module.css */
 .container {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  background: linear-gradient(
-    to bottom,
-    var(--tg-theme-bg-color),
-    var(--tg-theme-secondary-bg-color)
-  );
+  padding: 8px;
+  min-height: 100vh;
+  background: var(--telegram-bg);
+  position: relative;
 }
 
 .title {
-  color: var(--tg-theme-text-color);
-  margin-bottom: 20px;
+  color: var(--telegram-blue);
+  font-size: 18px;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.pokerTable {
+  background: var(--table-green);
+  border-radius: 0;                    /* Remove rounded corners */
+  padding: 16px;
+  margin: 8px auto;
+  box-shadow: 
+    inset 0 0 40px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.2);
+  position: relative;
+  border: 8px solid var(--table-border);
+  max-width: 320px;                    /* Slightly reduced width */
+  width: calc(100% - 16px);
+  min-height: 420px;                   /* Slightly reduced height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  clip-path: polygon(
+    0 0,                              /* Top-left */
+    100% 0,                          /* Top-right */
+    100% calc(100% - 40px),         /* Bottom-right curve start */
+    85% 100%,                       /* Bottom-right curve */
+    15% 100%,                       /* Bottom-left curve */
+    0 calc(100% - 40px)            /* Bottom-left curve start */
+  );
+}
+
+.pokerTable::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 .gameArea {
@@ -25,101 +73,239 @@
   max-width: 600px;
 }
 
-.dealerArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  position: relative;
-  padding: 20px;
-  border-radius: 20px;
-  background: rgba(var(--tg-theme-button-color-rgb), 0.1);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+.dealerArea, .playerArea {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;                          /* Reduced from 12px */
+  border-radius: 12px;                   /* Reduced from 16px */
+  margin: 4px auto;                      /* Reduced from 8px */
+  width: 80%;                            /* Reduced from 85% */
+  max-width: 180px;                      /* Reduced from 220px */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
 }
 
-.dealerCharacter {
-  font-size: 48px;
-  text-align: center;
-  animation: bounce 2s infinite;
-}
-
-.playerArea {
+.communityArea {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 12px;                         /* Reduced from 16px */
+  border-radius: 16px;                   /* Reduced from 20px */
+  margin: 0 auto;
+  width: 90%;                            /* Reduced from 95% */
+  max-width: 240px;                      /* Reduced from 300px */
+  min-height: 90px;                      /* Reduced from 110px */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  justify-content: center;
   position: relative;
-  padding: 20px;
-  border-radius: 20px;
-  background: rgba(var(--tg-theme-button-color-rgb), 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(5px);
 }
 
 .hand {
   display: flex;
-  gap: 10px;
+  gap: 4px;
   justify-content: center;
+  flex-wrap: nowrap;      /* Prevent wrapping */
 }
 
 .card {
-  width: 60px;
-  height: 90px;
+  width: 35px;                           /* Reduced from 40px */
+  height: 48px;                          /* Reduced from 56px */
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--tg-theme-bg-color);
-  border: 2px solid var(--tg-theme-button-color);
-  border-radius: 15px;
-  font-size: 18px;
-  transition: transform 0.3s ease;
-  padding: 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 4px;                    /* Reduced from 6px */
+  font-size: 16px;                       /* Increased from 14px */
+  font-weight: 800;                      /* Increased from 700 */
+  letter-spacing: -0.5px;                /* Tighter letter spacing */
+  color: #000000;                        /* Default black color for cards */
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 2px rgba(0, 0, 0, 0.1),
+    inset 0 0 1px rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  text-shadow: 
+    0 0 1px rgba(0, 0, 0, 0.2),
+    0 1px 1px rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Card backside styles */
+.cardBack {
+  background: linear-gradient(135deg, var(--telegram-blue) 0%, var(--telegram-blue-light) 100%);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cardBack::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.cardBack::after {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1) 0,
+    rgba(255, 255, 255, 0.1) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  transform: rotate(45deg);
+}
+
+.cardHidden {
+  background: none;
+  border-color: transparent;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.cardHidden:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
 }
 
 .card:hover {
-  transform: translateY(-5px) rotate(5deg);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 4px rgba(0, 0, 0, 0.2),
+    inset 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Trump card styles */
+.card[data-trump="true"] {
+  background: linear-gradient(135deg, #fff2d9 0%, #fff 100%);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(255, 215, 0, 0.2),
+    0 0 4px rgba(255, 215, 0, 0.1),
+    inset 0 0 2px rgba(255, 255, 255, 0.9);
+  animation: glowPulse 2s infinite;
+}
+
+.card[data-trump="true"]:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 
+    0 4px 12px rgba(255, 215, 0, 0.3),
+    0 0 8px rgba(255, 215, 0, 0.2),
+    inset 0 0 2px rgba(255, 255, 255, 0.9);
 }
 
 .red {
-  color: #ff0000;
+  color: #ff0000;                        /* Brighter red */
+  text-shadow: 
+    0 0 1px rgba(255, 0, 0, 0.3),
+    0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.black {
+  color: #000000;
+  text-shadow: 
+    0 0 1px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes glowPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 2px 8px rgba(255, 215, 0, 0.2),
+      0 0 4px rgba(255, 215, 0, 0.1),
+      inset 0 0 2px rgba(255, 255, 255, 0.9);
+  }
+  50% { 
+    box-shadow: 
+      0 2px 12px rgba(255, 215, 0, 0.4),
+      0 0 8px rgba(255, 215, 0, 0.2),
+      inset 0 0 2px rgba(255, 255, 255, 0.9);
+  }
 }
 
 .controls {
   display: flex;
-  gap: 15px;
-  margin-top: 20px;
+  gap: 6px;                              /* Reduced from 8px */
+  justify-content: center;
+  margin-top: 8px;                       /* Reduced from 12px */
+  padding: 0 8px;
 }
 
-.button {
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: var(--tg-theme-button-color);
-  color: var(--tg-theme-button-text-color);
+.controls button {
+  min-width: 60px;                       /* Reduced from 70px */
+  padding: 6px 12px;                     /* Reduced from 8px 16px */
+  border-radius: 6px;                    /* Reduced from 8px */
+  font-size: 13px;                       /* Reduced from 14px */
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--table-green);
+  border: none;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.button:hover {
-  transform: scale(1.05);
+.controls button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .result {
-  padding: 15px;
-  border-radius: 15px;
-  background: var(--tg-theme-secondary-bg-color);
-  text-align: center;
-  animation: popIn 0.5s ease;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--telegram-blue);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10;
 }
 
-.communityArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin: 30px 0;
-  padding: 20px;
-  background: rgba(var(--tg-theme-button-color-rgb), 0.05);
-  border-radius: 20px;
-  box-shadow: inset 0 0 20px rgba(var(--tg-theme-button-color-rgb), 0.1);
+.chips {
+  position: absolute;
+  top: 12px;                             /* Reduced from 16px */
+  right: 12px;                           /* Reduced from 16px */
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;                     /* Adjusted from 6px 12px */
+  border-radius: 10px;                   /* Reduced from 14px */
+  font-size: 12px;                       /* Reduced from 13px */
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  z-index: 1;
 }
 
 .gameStage {
@@ -154,7 +340,11 @@
 }
 
 .dealerThinking {
-  color: var(--tg-theme-hint-color);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  margin: 8px 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   animation: pulse 1.5s infinite;
 }
 
@@ -162,11 +352,6 @@
   0% { opacity: 1; }
   50% { opacity: 0.5; }
   100% { opacity: 1; }
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 @keyframes popIn {
@@ -183,16 +368,20 @@
   animation: dealCard 0.5s ease-out;
 }
 
-.chips {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: var(--tg-theme-secondary-bg-color);
-  font-size: 16px;
-}
-
 .chipIcon {
   font-size: 20px;
+}
+
+/* Add pot display */
+.potDisplay {
+  position: absolute;
+  top: -12px;                            /* Adjusted from -16px */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 3px 10px;                     /* Adjusted from 4px 12px */
+  border-radius: 10px;                   /* Reduced from 12px */
+  font-size: 12px;                       /* Reduced from 13px */
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.3);
 }
