@@ -1,23 +1,10 @@
-# TON Good Games
-
-
-
-A Telegram Mini App that contains a collection of games where you can play simple games with AI on the TON network.
-
-The app includes:
-
-- TicTacToe - Classic tic-tac-toe with AI opponents using the minimax algorithm
-- Chess - Chess implementation with AI opponents using the chess.js library
-- Poker - Texas Hold'em Poker against AI dealers
-- DotsAndBoxes - Classic dot and box drawing game against AI
-And more.
-
 
 # **TON Good Games 🎮**
 
-**'Enjoy simple games with AI!'**
+## **'Enjoy simple games with AI!'**
 
-**Project Overview**
+### **Project Overview**
+
 TON Good Games is an innovative Telegram Mini App that brings engaging AI-powered gaming experiences to the TON ecosystem. Players can enjoy classic games enhanced with modern AI opponents, all while seamlessly integrating with TON blockchain technology.
 
 ### The app includes:
