@@ -1,7 +1,7 @@
 
 # **TON Good Games 🎮**
 
-## >_**'Enjoy simple games with AI!'**_
+>## _**'Enjoy simple games with AI!'**_
 
 ### **Project Overview**
 
