@@ -1,5 +1,5 @@
 // src/pages/GameHub.tsx
-import { Page } from '@/components/Page';
+import { Page } from '@/components/Page.tsx';
 import { Button, Card, Text } from '@telegram-apps/telegram-ui';
 import { useNavigate } from 'react-router-dom';
 import styles from './GameHub.module.css';
@@ -57,6 +57,10 @@ export function GameHub() {
   return (
     <Page>
       <div className={styles.container}>
+        <header className={styles.header}>
+          <Text as="h1" className={styles.title}>✨ TON Good Games ✨</Text>
+        </header>
+
         {!wallet ? (
           <div className={styles.connectButtonWrapper}>
             <TonConnectButton className={styles.connectButton} />
