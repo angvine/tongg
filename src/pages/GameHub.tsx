@@ -4,10 +4,19 @@ import { Button, Card, Text } from '@telegram-apps/telegram-ui';
 import { useNavigate } from 'react-router-dom';
 import styles from './GameHub.module.css';
 import { TonConnectButton, useTonWallet, TonConnectUIProvider } from '@tonconnect/ui-react';
+import { useState } from 'react';
 
 export function GameHub() {
   const navigate = useNavigate();
   const wallet = useTonWallet();
+  const [isPremium, setIsPremium] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
+
+  const handleAeonMembership = () => {
+    setIsPremium(!isPremium);
+    setShowMessage(true);
+    setTimeout(() => setShowMessage(false), 3000);
+  };
 
   const games = [
     {
@@ -93,6 +102,24 @@ export function GameHub() {
               </Button>
             </Card>
           ))}
+        </div>
+
+        {/* AEON Membership Button */}
+        <div className={styles.aeonWrapper}>
+          {showMessage && (
+            <Text className={styles.membershipMessage}>
+              {isPremium 
+                ? '✨ Premium membership activated!' 
+                : '❌ Premium membership cancelled'}
+            </Text>
+          )}
+          <Button
+            className={styles.aeonButton}
+            onClick={handleAeonMembership}
+            variant="plain"  // Add this line to prevent default button styling
+          >
+            {isPremium ? 'Cancel membership' : 'Premium membership'}
+          </Button>
         </div>
       </div>
     </Page>
