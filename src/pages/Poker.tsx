@@ -13,6 +13,9 @@ interface BettingState {
 }
 
 export function Poker() {
+  // Add new state for tracking raises
+  const [riverRaises, setRiverRaises] = useState<number>(0);
+  
   const [poker] = useState(() => new PokerLogic());
   const [deck, setDeck] = useState<Card[]>([]);
   const [playerHand, setPlayerHand] = useState<Card[]>([]);
@@ -57,6 +60,7 @@ export function Poker() {
     setPot(0);
     setPlayerBet(0);
     setAIBet(0);
+    setRiverRaises(0);  // Reset raises counter
     
     // Small and big blinds
     const smallBlind = 10;
@@ -87,6 +91,18 @@ export function Poker() {
     const position = gameStage === 'preflop' ? 'early' : 'late';
     
     // Enhanced decision making based on game stage
+    if (gameStage === 'river') {
+      if (riverRaises >= 2) {
+        // If already raised twice, only call or fold
+        if (handStrength >= 4 || potOdds < 0.3) {
+          handleAIAction('call');
+        } else {
+          handleAIAction('fold');
+        }
+        return;
+      }
+    }
+
     if (gameStage === 'preflop') {
       // Preflop strategy
       const hasAce = aiHand.some(card => card.value === 'A');
@@ -197,6 +213,10 @@ export function Poker() {
         if (raiseAmount && raiseAmount >= currentBet * 2) {
           const actualRaise = Math.min(raiseAmount, aiChips + aiBet);
           const raiseIncrement = actualRaise - aiBet;
+          
+          if (gameStage === 'river') {
+            setRiverRaises(prev => prev + 1);
+          }
           
           if (raiseIncrement >= aiChips) {
             // All-in
