@@ -20,20 +20,8 @@ export default defineConfig({
   publicDir: './public',
   server: {
     // Exposes your dev server and makes it accessible for the devices in the same network.
-    host: true, // Listen on all addresses
+    host: 'localhost',
     port: 8080, // Default HTTP port
-    https: true, // Enable HTTPS
-    proxy: {
-      '/socket.io': {
-        target: 'wss://games.ton.gg',
-        ws: true,
-        secure: false
-      }
-    },
-    hmr: {
-      protocol: 'wss',
-      host: 'localhost',
-      port: 8080
-    }
+    https: false,
   },
 });

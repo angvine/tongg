@@ -62,9 +62,7 @@ export function GameHub() {
           <Text className={styles.subtitle}>Simple games to enjoy with AI</Text>
           
           {!wallet ? (
-            <div className={styles.connectButtonWrapper}>
-              <TonConnectButton className={styles.connectButton} />
-            </div>
+            <TonConnectButton className={styles.connectButton} />
           ) : (
             <Text className={styles.walletInfo}>
               Connected: {wallet.account.address}
