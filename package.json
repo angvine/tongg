@@ -25,7 +25,9 @@
     "@mantine/hooks": "^7.6.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "eruda": "^3.0.1"
+    "eruda": "^3.0.1",
+    "@telegram-apps/sdk-react": "^2.0.0",
+    "@telegram-apps/telegram-ui": "^2.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
