@@ -66,15 +66,56 @@ export class PokerLogic {
   private evaluateSingleHand(cards: Card[]): HandRank & { kickers: Card[] } {
     if (cards.length !== 5) throw new Error('Invalid hand size');
 
-    if (this.isStraightFlush(cards)) return { rank: 8, name: 'Straight Flush', cards, kickers: [] };
+    const sortedCards = [...cards].sort((a, b) => this.VALUES[b.value] - this.VALUES[a.value]);
+    
+    if (this.isStraightFlush(cards)) return { rank: 8, name: 'Straight Flush', cards, kickers: sortedCards };
     if (this.isFourOfAKind(cards)) return { rank: 7, name: 'Four of a Kind', cards, kickers: this.getKickers(cards, 4) };
-    if (this.isFullHouse(cards)) return { rank: 6, name: 'Full House', cards, kickers: [] };
-    if (this.isFlush(cards)) return { rank: 5, name: 'Flush', cards, kickers: this.getKickers(cards, 5) };
-    if (this.isStraight(cards)) return { rank: 4, name: 'Straight', cards, kickers: [] };
+    if (this.isFullHouse(cards)) return { rank: 6, name: 'Full House', cards, kickers: this.getFullHouseKickers(cards) };
+    if (this.isFlush(cards)) return { rank: 5, name: 'Flush', cards, kickers: sortedCards };
+    if (this.isStraight(cards)) return { rank: 4, name: 'Straight', cards, kickers: sortedCards };
     if (this.isThreeOfAKind(cards)) return { rank: 3, name: 'Three of a Kind', cards, kickers: this.getKickers(cards, 3) };
-    if (this.isTwoPair(cards)) return { rank: 2, name: 'Two Pair', cards, kickers: this.getKickers(cards, 2) };
+    if (this.isTwoPair(cards)) return { rank: 2, name: 'Two Pair', cards, kickers: this.getTwoPairKickers(cards) };
     if (this.isPair(cards)) return { rank: 1, name: 'Pair', cards, kickers: this.getKickers(cards, 2) };
-    return { rank: 0, name: 'High Card', cards, kickers: this.getKickers(cards, 1) };
+    return { rank: 0, name: 'High Card', cards, kickers: sortedCards };
+  }
+
+  private getFullHouseKickers(cards: Card[]): Card[] {
+    const valueCounts = this.getValueCounts(cards);
+    const sortedValues = Object.entries(valueCounts)
+        .sort(([v1, c1], [v2, c2]) => 
+            c2 - c1 || this.VALUES[v2] - this.VALUES[v1]
+        );
+    
+    const threeOfAKindValue = sortedValues[0][0];
+    const pairValue = sortedValues[1][0];
+    
+    return cards
+        .sort((a, b) => {
+            if (a.value === threeOfAKindValue && b.value !== threeOfAKindValue) return -1;
+            if (a.value !== threeOfAKindValue && b.value === threeOfAKindValue) return 1;
+            if (a.value === pairValue && b.value !== pairValue) return -1;
+            if (a.value !== pairValue && b.value === pairValue) return 1;
+            return this.VALUES[b.value] - this.VALUES[a.value];
+        });
+  }
+
+  private getTwoPairKickers(cards: Card[]): Card[] {
+    const valueCounts = this.getValueCounts(cards);
+    const pairs = Object.entries(valueCounts)
+        .filter(([_, count]) => count === 2)
+        .sort(([v1], [v2]) => this.VALUES[v2] - this.VALUES[v1]);
+    
+    const highPairValue = pairs[0][0];
+    const lowPairValue = pairs[1][0];
+    
+    return cards
+        .sort((a, b) => {
+            if (a.value === highPairValue && b.value !== highPairValue) return -1;
+            if (a.value !== highPairValue && b.value === highPairValue) return 1;
+            if (a.value === lowPairValue && b.value !== lowPairValue) return -1;
+            if (a.value !== lowPairValue && b.value === lowPairValue) return 1;
+            return this.VALUES[b.value] - this.VALUES[a.value];
+        });
   }
 
   private getKickers(cards: Card[], count: number): Card[] {
