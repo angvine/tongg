@@ -38,6 +38,27 @@
 .inputArea {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+input {
+  flex: 1;
+  min-width: 200px;
+}
+
+@media screen and (max-width: 480px) {
+  .inputArea {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .inputArea button {
+    width: 100%;
+  }
+
+  .container {
+    padding: 16px;
+  }
 }
 
 .attempts {
