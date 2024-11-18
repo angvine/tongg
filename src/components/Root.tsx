@@ -20,6 +20,10 @@ function ErrorBoundaryError({ error }: { error: unknown }) {
   );
 }
 
+// Wallet connection implementation in ToN Good Games
+
+// 1. Core wallet integration via TonConnectUIProvider
+// In src/components/Root.tsx
 export function Root() {
   return (
     <TonConnectUIProvider manifestUrl="https://ton.games/tonconnect-manifest.json">

@@ -3,7 +3,7 @@ import { Page } from '@/components/Page';
 import { Button, Card, Text } from '@telegram-apps/telegram-ui';
 import { useNavigate } from 'react-router-dom';
 import styles from './GameHub.module.css';
-import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
+import { TonConnectButton, useTonWallet, TonConnectUIProvider } from '@tonconnect/ui-react';
 
 export function GameHub() {
   const navigate = useNavigate();
@@ -57,19 +57,17 @@ export function GameHub() {
   return (
     <Page>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <Text as="h1" className={styles.title}>TON Good Games</Text><br></br>
-          <Text className={styles.subtitle}>Simple games to enjoy with AI</Text>
-          
-          {!wallet ? (
+        {!wallet ? (
+          <div className={styles.connectButtonWrapper}>
             <TonConnectButton className={styles.connectButton} />
-          ) : (
-            <Text className={styles.walletInfo}>
-              Connected: {wallet.account.address}
-            </Text>
-          )}
-        </div>
+          </div>
+        ) : (
+          <Text className={styles.walletInfo}>
+            Connected: {wallet.account.address}
+          </Text>
+        )}
         
+        {/* Game cards grid */}
         <div className={styles.gameGrid}>
           {games.map(game => (
             <Card key={game.id} className={styles.gameCard}>
@@ -94,5 +92,13 @@ export function GameHub() {
         </div>
       </div>
     </Page>
+  );
+}
+
+function Root() {
+  return (
+    <TonConnectUIProvider manifestUrl="https://ton.games/tonconnect-manifest.json">
+      <App />
+    </TonConnectUIProvider>
   );
 }

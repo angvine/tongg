@@ -115,8 +115,8 @@
 
 .connectButtonWrapper {
   display: flex;
-  justify-content: flex-start; /* Align to left */
-  margin-left: 16px; /* Add left margin */
+  justify-content: flex-start;
+  margin-left: 16px;
   margin-top: 8px;
 }
 
