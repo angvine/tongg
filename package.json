@@ -17,8 +17,6 @@
     "ton": "^13.9.0",
     "ton-core": "^0.53.0",
     "ton-crypto": "^3.2.0",
-    "@twa-dev/sdk": "^6.6.2",
-    "@twa-dev/types": "^6.6.2",
     "react-router-dom": "^6.22.3",
     "chess.js": "^1.0.0-beta.8",
     "@mantine/core": "^7.6.1",
@@ -27,7 +25,9 @@
     "react-dom": "^18.2.0",
     "eruda": "^3.0.1",
     "@telegram-apps/sdk-react": "^2.0.0",
-    "@telegram-apps/telegram-ui": "^2.0.0"
+    "@telegram-apps/telegram-ui": "^2.0.0",
+    "@twa-dev/sdk": "^6.6.2",
+    "@twa-dev/types": "^6.6.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
