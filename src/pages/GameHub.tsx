@@ -114,7 +114,7 @@ export function GameHub() {
             </Text>
           )}
           <Button
-            className={styles.aeonButton}
+            className={`${styles.aeonButton} ${isPremium ? styles.cancel : ''}`}
             onClick={handleAeonMembership}
             variant="plain"  // Add this line to prevent default button styling
           >

@@ -148,7 +148,7 @@
 }
 
 .aeonButton[class] {  /* Increased specificity */
-  background: #00FF9D !important;  /* Ensure override */
+  background: #00FF9D !important;  /* Default color for 'Premium membership' button */
   color: #000000;
   font-size: 16px;
   font-weight: 600;
@@ -158,6 +158,17 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
+}
+
+/* Add new style for cancel button */
+.aeonButton[class].cancel {
+  background: #FF6B6B !important;  /* Coral red color for 'Cancel membership' button */
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.aeonButton[class].cancel:hover {
+  background: #ff5252 !important;
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
 }
 
 .aeonButton[class]:hover {  /* Increased specificity */
