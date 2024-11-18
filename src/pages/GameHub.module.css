@@ -113,6 +113,16 @@
   transform: scale(1.02);
 }
 
+.connectButtonWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.connectButton {
+  margin: 0 auto;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
