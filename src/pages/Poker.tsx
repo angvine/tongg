@@ -36,7 +36,6 @@ export function Poker() {
     maxRaise: 0
   });
   const [aiSpeech, setAiSpeech] = useState<string>('');
-  const [aiThinkingTimeout, setAiThinkingTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const startNewGame = () => {
     const newDeck = poker.createDeck();
@@ -77,221 +76,169 @@ export function Poker() {
 
   const handleAITurn = async () => {
     setIsPlayerTurn(false);
-    
-    // Clear any existing timeout
-    if (aiThinkingTimeout) {
-      clearTimeout(aiThinkingTimeout);
-    }
-    
-    // Set a timeout to force action if AI gets stuck
-    const timeout = setTimeout(() => {
-      console.log('AI timeout triggered - forcing action');
-      handleAIAction('fold');
-    }, 5000);
-    
-    setAiThinkingTimeout(timeout);
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Clear timeout as AI is responding normally
-      clearTimeout(timeout);
-      setAiThinkingTimeout(null);
-
-      const aiCards = aiHand.map(card => ({...card, hidden: false}));
-      const callAmount = Math.max(0, currentBet - aiBet);
-      
-      // Validate betting amounts
-      if (callAmount > aiChips) {
-        handleAIAction('fold');
+    const aiCanCheck = currentBet === aiBet;
+    const callAmount = currentBet - aiBet;
+    const lastRaiseSize = currentBet - Math.min(playerBet, aiBet);
+    const minRaise = Math.max(currentBet + lastRaiseSize, 20);
+    const maxRaise = aiChips + aiBet;
+    
+    // Calculate hand strength and potential
+    const aiVisibleCards = [...aiHand.map(card => ({...card, hidden: false})), ...communityCards];
+    const handStrength = poker.evaluateHand(aiVisibleCards).rank;
+    const potOdds = callAmount / (pot + callAmount);
+    const position = gameStage === 'preflop' ? 'early' : 'late';
+    
+    // Enhanced decision making based on game stage
+    if (gameStage === 'river') {
+      if (riverRaises >= 2) {
+        // If already raised twice, only call or fold
+        if (handStrength >= 4 || potOdds < 0.3) {
+          handleAIAction('call');
+        } else {
+          handleAIAction('fold');
+        }
         return;
       }
+    }
 
-      const lastRaiseSize = currentBet - Math.min(playerBet, aiBet);
-      const minRaise = Math.max(currentBet + lastRaiseSize, 20);
-      const maxRaise = aiChips + aiBet;
-
-      // Calculate hand equity
-      const handEquity = poker.calculateHandEquity(aiCards, communityCards);
+    if (gameStage === 'preflop') {
+      // Preflop strategy
+      const hasAce = aiHand.some(card => card.value === 'A');
+      const hasKing = aiHand.some(card => card.value === 'K');
+      const hasHighPair = aiHand[0].value === aiHand[1].value && 
+        ['A', 'K', 'Q', 'J', '10'].includes(aiHand[0].value);
       
-      // Calculate pot odds
-      const potOdds = poker.calculatePotOdds(callAmount, pot);
-      
-      // Position evaluation
-      const position = gameStage === 'preflop' ? 'early' : 'late';
-      const positionMultiplier = poker.evaluatePosition(position, gameStage);
-      
-      // Stack size considerations
-      const effectiveStack = Math.min(aiChips, playerChips);
-      const stackToPotRatio = effectiveStack / pot;
-      
-      // Final decision making
-      const decisionThreshold = handEquity * positionMultiplier;
-
-      if (gameStage === 'river') {
-        if (riverRaises >= 2) {
-          // If already raised twice on river, be more cautious
-          if (handEquity > 0.8 || (handEquity > 0.6 && potOdds < 0.2)) {
-            handleAIAction('call');
-          } else {
-            handleAIAction('fold');
-          }
-          return;
-        }
+      if (hasHighPair || (hasAce && hasKing)) {
+        // Strong starting hand - raise
+        handleAIAction('raise', Math.min(pot * 2, maxRaise));
+      } else if (hasAce || hasKing) {
+        // Decent hand - call or small raise
+        if (callAmount <= aiChips * 0.1) handleAIAction('call');
+        else handleAIAction('fold');
+      } else {
+        // Weak hand - check or fold
+        if (aiCanCheck) handleAIAction('check');
+        else if (callAmount <= 20) handleAIAction('call');
+        else handleAIAction('fold');
       }
+    } else {
+      // Post-flop strategy
+      const strengthThreshold = {
+        flop: 2,   // Pair or better
+        turn: 3,   // Three of a kind or better
+        river: 4   // Straight or better
+      }[gameStage] || 2;
 
-      // Aggressive play with strong hands
-      if (decisionThreshold > 0.8) {
-        const raiseAmount = Math.min(
-          pot * (handEquity * 2), // Size raise based on hand strength
-          maxRaise
-        );
+      if (handStrength >= strengthThreshold) {
+        // Strong hand
+        const raiseAmount = Math.min(pot * (handStrength / 2), maxRaise);
         if (raiseAmount >= minRaise) {
           handleAIAction('raise', raiseAmount);
-          return;
+        } else {
+          handleAIAction('call');
+        }
+      } else if (handStrength >= strengthThreshold - 1) {
+        // Medium strength hand
+        if (potOdds < 0.3) {
+          if (aiCanCheck) handleAIAction('check');
+          else handleAIAction('call');
+        } else {
+          if (callAmount <= aiChips * 0.15) handleAIAction('call');
+          else handleAIAction('fold');
+        }
+      } else {
+        // Weak hand
+        if (aiCanCheck) {
+          handleAIAction('check');
+        } else if (potOdds < 0.2 && callAmount <= aiChips * 0.1) {
+          handleAIAction('call');
+        } else {
+          handleAIAction('fold');
         }
       }
-
-      // Semi-bluff with drawing hands
-      if (decisionThreshold > 0.4 && stackToPotRatio > 3) {
-        if (Math.random() < handEquity) { // Bluff frequency based on hand strength
-          const bluffAmount = Math.min(pot * 0.6, maxRaise);
-          handleAIAction('raise', bluffAmount);
-          return;
-        }
-      }
-
-      // Call with medium strength hands if odds are good
-      if (decisionThreshold > potOdds) {
-        handleAIAction('call');
-        return;
-      }
-
-      // Default to folding
-      handleAIAction('fold');
-    } catch (error) {
-      console.error('AI turn error:', error);
-      // Clear timeout and force fold on error
-      clearTimeout(timeout);
-      setAiThinkingTimeout(null);
-      handleAIAction('fold');
     }
   };
 
   const handleAIAction = (action: 'check' | 'call' | 'raise' | 'fold', raiseAmount?: number) => {
-    try {
-      // Clear AI thinking timeout if it exists
-      if (aiThinkingTimeout) {
-        clearTimeout(aiThinkingTimeout);
-        setAiThinkingTimeout(null);
-      }
-
-      // Validate action is possible
-      if (!validateAIAction(action, raiseAmount)) {
-        console.log('Invalid AI action, forcing fold');
-        action = 'fold';
-      }
-
-      // Set AI speech based on action
-      switch (action) {
-        case 'check':
-          setAiSpeech("I'll check.");
-          break;
-        case 'call':
-          setAiSpeech(`I'll call $${currentBet - aiBet}.`);
-          break;
-        case 'raise':
-          setAiSpeech(`I raise to $${raiseAmount}!`);
-          break;
-        case 'fold':
-          setAiSpeech("I fold...");
-          break;
-      }
-
-      // Clear speech after 2 seconds
-      setTimeout(() => setAiSpeech(''), 2000);
-
-      switch (action) {
-        case 'check':
-          if (currentBet === aiBet) {
-            advanceGameStage();
-          }
-          break;
-
-        case 'call':
-          const callAmount = currentBet - aiBet;
-          if (callAmount > aiChips) {
-            // All-in
-            const allInAmount = aiChips;
-            setAIChips(0);
-            setAIBet(aiBet + allInAmount);
-            setPot(prev => prev + allInAmount);
-          } else {
-            setAIChips(prev => prev - callAmount);
-            setAIBet(currentBet);
-            setPot(prev => prev + callAmount);
-          }
-          
-          if (currentBet === playerBet) {
-            advanceGameStage();
-          } else {
-            setIsPlayerTurn(true);
-          }
-          break;
-        
-        case 'raise':
-          if (raiseAmount && raiseAmount >= currentBet * 2) {
-            const actualRaise = Math.min(raiseAmount, aiChips + aiBet);
-            const raiseIncrement = actualRaise - aiBet;
-            
-            if (gameStage === 'river') {
-              setRiverRaises(prev => prev + 1);
-            }
-            
-            if (raiseIncrement >= aiChips) {
-              // All-in
-              setAIChips(0);
-              setAIBet(aiBet + aiChips);
-              setPot(prev => prev + aiChips);
-              setCurrentBet(aiBet + aiChips);
-            } else {
-              setAIChips(prev => prev - raiseIncrement);
-              setAIBet(actualRaise);
-              setPot(prev => prev + raiseIncrement);
-              setCurrentBet(actualRaise);
-            }
-            setIsPlayerTurn(true);
-          }
-          break;
-        
-        case 'fold':
-          setPlayerChips(prev => prev + pot);
-          setResult('AI folded. You win!');
-          setGameStage('end');
-          break;
-      }
-    } catch (error) {
-      console.error('AI action error:', error);
-      // Handle any errors by folding
-      setAiSpeech("I fold due to error");
-      handleFold();
-    }
-  };
-
-  const validateAIAction = (action: string, raiseAmount?: number): boolean => {
+    // Set AI speech based on action
     switch (action) {
       case 'check':
-        return currentBet === aiBet;
+        setAiSpeech("I'll check.");
+        break;
       case 'call':
-        return (currentBet - aiBet) <= aiChips;
+        setAiSpeech(`I'll call $${currentBet - aiBet}.`);
+        break;
       case 'raise':
-        return raiseAmount !== undefined && 
-               raiseAmount <= (aiChips + aiBet) && 
-               raiseAmount >= Math.max(currentBet * 2, 20);
+        setAiSpeech(`I raise to $${raiseAmount}!`);
+        break;
       case 'fold':
-        return true;
-      default:
-        return false;
+        setAiSpeech("I fold...");
+        break;
+    }
+
+    // Clear speech after 2 seconds
+    setTimeout(() => setAiSpeech(''), 2000);
+
+    switch (action) {
+      case 'check':
+        if (currentBet === aiBet) {
+          advanceGameStage();
+        }
+        break;
+
+      case 'call':
+        const callAmount = currentBet - aiBet;
+        if (callAmount > aiChips) {
+          // All-in
+          const allInAmount = aiChips;
+          setAIChips(0);
+          setAIBet(aiBet + allInAmount);
+          setPot(prev => prev + allInAmount);
+        } else {
+          setAIChips(prev => prev - callAmount);
+          setAIBet(currentBet);
+          setPot(prev => prev + callAmount);
+        }
+        
+        if (currentBet === playerBet) {
+          advanceGameStage();
+        } else {
+          setIsPlayerTurn(true);
+        }
+        break;
+      
+      case 'raise':
+        if (raiseAmount && raiseAmount >= currentBet * 2) {
+          const actualRaise = Math.min(raiseAmount, aiChips + aiBet);
+          const raiseIncrement = actualRaise - aiBet;
+          
+          if (gameStage === 'river') {
+            setRiverRaises(prev => prev + 1);
+          }
+          
+          if (raiseIncrement >= aiChips) {
+            // All-in
+            setAIChips(0);
+            setAIBet(aiBet + aiChips);
+            setPot(prev => prev + aiChips);
+            setCurrentBet(aiBet + aiChips);
+          } else {
+            setAIChips(prev => prev - raiseIncrement);
+            setAIBet(actualRaise);
+            setPot(prev => prev + raiseIncrement);
+            setCurrentBet(actualRaise);
+          }
+          setIsPlayerTurn(true);
+        }
+        break;
+      
+      case 'fold':
+        setPlayerChips(prev => prev + pot);
+        setResult('AI folded. You win!');
+        setGameStage('end');
+        break;
     }
   };
 
@@ -403,42 +350,24 @@ export function Poker() {
   };
 
   const advanceGameStage = () => {
-    // Validate that bets are equal before advancing
-    if (playerBet !== aiBet || currentBet !== playerBet) {
-      console.error('Betting mismatch detected');
-      return;
-    }
-
     // Reset bets for new betting round
     setPlayerBet(0);
     setAIBet(0);
     setCurrentBet(0);
     
-    try {
-      switch (gameStage) {
-        case 'preflop':
-          if (communityCards.length !== 0) throw new Error('Invalid community cards for preflop');
-          dealFlop();
-          break;
-        case 'flop':
-          if (communityCards.length !== 3) throw new Error('Invalid community cards for flop');
-          dealTurn();
-          break;
-        case 'turn':
-          if (communityCards.length !== 4) throw new Error('Invalid community cards for turn');
-          dealRiver();
-          break;
-        case 'river':
-          if (communityCards.length !== 5) throw new Error('Invalid community cards for river');
-          handleShowdown();
-          break;
-        default:
-          throw new Error('Invalid game stage');
-      }
-    } catch (error) {
-      console.error('Game stage error:', error);
-      // Reset the game on critical errors
-      startNewGame();
+    switch (gameStage) {
+      case 'preflop':
+        dealFlop();
+        break;
+      case 'flop':
+        dealTurn();
+        break;
+      case 'turn':
+        dealRiver();
+        break;
+      case 'river':
+        handleShowdown();
+        break;
     }
   };
 
@@ -479,14 +408,6 @@ export function Poker() {
   useEffect(() => {
     updateBettingState();
   }, [currentBet, playerBet, aiBet, playerChips, aiChips]);
-
-  useEffect(() => {
-    return () => {
-      if (aiThinkingTimeout) {
-        clearTimeout(aiThinkingTimeout);
-      }
-    };
-  }, [aiThinkingTimeout]);
 
   const updateBettingState = () => {
     // Can check only if no one has bet in this round
