@@ -107,6 +107,34 @@ const quiescenceSearch = (chess: ChessLibrary, alpha: number, beta: number, dept
   return alpha;
 };
 
+// Add these new evaluation constants
+const KING_SAFETY = {
+  PAWN_SHIELD: 50,     // Bonus for pawns protecting king
+  KING_EXPOSED: -100,  // Penalty for exposed king
+  SAFE_SQUARES: 30     // Bonus for each safe square around king
+};
+
+const PIECE_COORDINATION = {
+  CONNECTED_ROOKS: 50,      // Bonus for rooks supporting each other
+  BISHOP_PAIR: 50,         // Bonus for having both bishops
+  KNIGHT_OUTPOST: 30,      // Bonus for knights in strong positions
+  PAWN_CHAIN: 20          // Bonus for connected pawns
+};
+
+const CENTER_CONTROL = {
+  CENTER_SQUARE: 30,      // d4,d5,e4,e5
+  EXTENDED_CENTER: 15     // c3-f3-f6-c6
+};
+
+// Add strategic pattern recognition
+const PAWN_STRUCTURE = {
+  ISOLATED: -20,
+  DOUBLED: -15,
+  BACKWARD: -10,
+  PASSED: 50,
+  PROTECTED_PASSED: 70
+};
+
 // Improved evaluation function
 function evaluateBoard(chess: ChessLibrary): number {
   if (chess.isCheckmate()) {
@@ -147,84 +175,410 @@ function evaluateBoard(chess: ChessLibrary): number {
     }
   }
 
+  // Strategic evaluation
+  score += evaluatePieceCoordination(chess, 'w') - evaluatePieceCoordination(chess, 'b');
+  score += evaluateKingSafety(chess, 'w') - evaluateKingSafety(chess, 'b');
+  score += evaluateCenterControl(chess, 'w') - evaluateCenterControl(chess, 'b');
+  
+  // Mobility
+  score += evaluateMobility(chess, 'w') - evaluateMobility(chess, 'b');
+
+  // Add tempo bonus
+  score += chess.turn() === 'w' ? 10 : -10;
+
+  // Add threat evaluation
+  score += evaluateThreats(chess, 'w');
+  score -= evaluateThreats(chess, 'b');
+
+  // Add future position analysis
+  const futureScore = evaluateFuturePosition(chess, chess.turn());
+  score += futureScore;
+
   return score;
 }
 
 // Improved move ordering for better alpha-beta pruning
 function orderMoves(chess: ChessLibrary, moves: Move[]): Move[] {
-  return moves.sort((a, b) => {
-    let scoreA = 0;
-    let scoreB = 0;
+  const hash = zobristHash(chess);
+  const tt = TranspositionTable.get(hash);
+  const moveScores = new Map<Move, number>();
+
+  moves.forEach(move => {
+    let score = 0;
     
-    // Capturing moves
-    if (a.captured) {
-      scoreA += PIECE_VALUES[a.captured] - PIECE_VALUES[a.piece];
+    // TT move gets highest priority
+    if (tt && moveEquals(move, tt.move)) {
+      score += 10000;
     }
-    if (b.captured) {
-      scoreB += PIECE_VALUES[b.captured] - PIECE_VALUES[b.piece];
+    
+    // Captures
+    if (move.captured) {
+      score += 1000 + getMVVLVA(move);
     }
     
-    // Promotion moves
-    if (a.promotion) scoreA += PIECE_VALUES[a.promotion];
-    if (b.promotion) scoreB += PIECE_VALUES[b.promotion];
+    // Killer moves
+    if (KillerMoves[chess.history().length]?.some(m => moveEquals(m, move))) {
+      score += 900;
+    }
     
-    // Check moves
-    if (a.san.includes('+')) scoreA += 50;
-    if (b.san.includes('+')) scoreB += 50;
+    // History heuristic
+    const historyKey = `${move.from}${move.to}`;
+    score += HistoryTable.get(historyKey) || 0;
+
+    // Check if move improves piece position
+    chess.move(move);
+    const positionImprovement = evaluatePositionalGain(chess, move);
+    chess.undo();
+    score += positionImprovement;
     
-    return scoreB - scoreA;
+    // Prioritize center control in opening/middlegame
+    if (!isEndgame(chess)) {
+      if (isCenterSquare(move.to)) {
+        score += 50;
+      }
+    }
+    
+    // Consider piece development in opening
+    if (isOpeningPhase(chess) && isOptimalDevelopmentMove(move)) {
+      score += 40;
+    }
+    
+    // Check if move prevents immediate threats
+    chess.move(move);
+    const threatsBefore = evaluateThreats(chess, chess.turn());
+    const threatsAfter = evaluateThreats(chess, chess.turn() === 'w' ? 'b' : 'w');
+    chess.undo();
+
+    // Bonus for moves that reduce threats
+    if (threatsAfter > threatsBefore) {
+      score += 200;
+    }
+
+    // Penalty for moves that create self-threats
+    if (threatsBefore > threatsAfter) {
+      score -= 150;
+    }
+
+    moveScores.set(move, score);
   });
+
+  return moves.sort((a, b) => (moveScores.get(b) || 0) - (moveScores.get(a) || 0));
 }
 
-// Update findBestMove to use move ordering
-function findBestMove(chess: ChessLibrary, depth: number = 4): Move {
-  const moves = chess.moves({ verbose: true });
-  const orderedMoves = orderMoves(chess, moves);
-  let bestMove = orderedMoves[0];
-  let bestScore = -Infinity;
-  let alpha = -Infinity;
-  const beta = Infinity;
-  
-  // Opening book check
-  const bookMove = getOpeningBookMove(chess);
-  if (bookMove) return bookMove;
+// Add these new constants near the top
+const INFINITY = 30000;
+const MATE_VALUE = 29000;
+const MATE_THRESHOLD = 28000;
 
-  for (const move of orderedMoves) {
+// Add transposition table interface
+interface TTEntry {
+  depth: number;
+  score: number;
+  flag: 'exact' | 'alpha' | 'beta';
+  move: Move;
+}
+
+// Add new constants and data structures
+const TranspositionTable = new Map<string, TTEntry>();
+const KillerMoves: Move[][] = Array(64).fill([]);
+const HistoryTable = new Map<string, number>();
+
+// Add this helper function
+function zobristHash(chess: ChessLibrary): string {
+  return chess.fen().split(' ').slice(0, 4).join(' ');
+}
+
+// Replace the existing findBestMove function
+function findBestMove(chess: ChessLibrary, maxTime: number = 5000): Move | null {
+  try {
+    const startTime = Date.now();
+    let bestMove: Move | null = null;
+    let depth = 1;
+
+    // First check opening book
+    const bookMove = getOpeningBookMove(chess);
+    if (bookMove) return bookMove;
+
+    // Get legal moves first
+    const legalMoves = chess.moves({ verbose: true });
+    if (legalMoves.length === 0) return null;
+    
+    // If only one legal move, return it immediately
+    if (legalMoves.length === 1) return legalMoves[0];
+
+    while (Date.now() - startTime < maxTime && depth <= 4) {
+      try {
+        const searchResult = searchPosition(chess, depth, -INFINITY, INFINITY, true, startTime, maxTime);
+        if (searchResult.move) {
+          bestMove = searchResult.move;
+        }
+        
+        if (Math.abs(searchResult.score) > MATE_THRESHOLD) {
+          break;
+        }
+        
+        depth++;
+      } catch (e) {
+        break;
+      }
+    }
+
+    // If no best move found, return a random legal move
+    return bestMove || legalMoves[Math.floor(Math.random() * legalMoves.length)];
+  } catch (error) {
+    console.error('Find best move error:', error);
+    return null;
+  }
+}
+
+// Add this new search function
+function searchPosition(
+  chess: ChessLibrary, 
+  depth: number, 
+  alpha: number, 
+  beta: number, 
+  isRoot: boolean = false,
+  startTime: number,
+  maxTime: number
+): { score: number; move: Move | null } {
+  // Time check
+  if (Date.now() - startTime > maxTime) {
+    throw new Error('Time exceeded');
+  }
+
+  // Transposition table lookup
+  const hash = zobristHash(chess);
+  const tt = TranspositionTable.get(hash);
+  if (tt && tt.depth >= depth && !isRoot) {
+    if (tt.flag === 'exact') return { score: tt.score, move: tt.move };
+    if (tt.flag === 'alpha' && tt.score <= alpha) return { score: alpha, move: tt.move };
+    if (tt.flag === 'beta' && tt.score >= beta) return { score: beta, move: tt.move };
+  }
+
+  if (depth === 0) {
+    return { 
+      score: quiescenceSearch(chess, alpha, beta, 10),
+      move: null 
+    };
+  }
+
+  const moves = orderMoves(chess, chess.moves({ verbose: true }));
+  let bestMove: Move | null = null;
+  let bestScore = -INFINITY;
+  let originalAlpha = alpha;
+
+  for (const move of moves) {
     chess.move(move);
-    const score = -negamax(chess, depth - 1, -beta, -alpha, -1);
+    const score = -searchPosition(
+      chess, 
+      depth - 1, 
+      -beta, 
+      -alpha,
+      false,
+      startTime,
+      maxTime
+    ).score;
     chess.undo();
 
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
+      
+      if (score > alpha) {
+        alpha = score;
+        
+        // Update killer moves and history table
+        if (!move.captured) {
+          KillerMoves[depth] = [move, ...(KillerMoves[depth] || []).slice(0, 1)];
+          const key = `${move.from}${move.to}`;
+          HistoryTable.set(key, (HistoryTable.get(key) || 0) + depth * depth);
+        }
+      }
     }
-    alpha = Math.max(alpha, bestScore);
+
+    if (alpha >= beta) {
+      // Store beta cutoff
+      TranspositionTable.set(hash, {
+        depth,
+        score: beta,
+        flag: 'beta',
+        move: move
+      });
+      return { score: beta, move };
+    }
   }
 
-  return bestMove;
+  // Store transposition table entry
+  TranspositionTable.set(hash, {
+    depth,
+    score: bestScore,
+    flag: bestScore <= originalAlpha ? 'alpha' : 'exact',
+    move: bestMove!
+  });
+
+  return { score: bestScore, move: bestMove };
 }
 
-function negamax(chess: ChessLibrary, depth: number, alpha: number, beta: number, color: number): number {
-  if (depth === 0) {
-    return color * quiescenceSearch(chess, alpha, beta, 3);
+// Add these helper functions
+function moveEquals(a: Move, b: Move): boolean {
+  return a && b && a.from === b.from && a.to === b.to && a.promotion === b.promotion;
+}
+
+function getMVVLVA(move: Move): number {
+  const victimValue = PIECE_VALUES[move.captured || 'p'];
+  const attackerValue = PIECE_VALUES[move.piece];
+  return victimValue * 100 - attackerValue;
+}
+
+function isOpeningPhase(chess: ChessLibrary): boolean {
+  return chess.history().length < 10;
+}
+
+function isCenterSquare(square: string): boolean {
+  return ['d4', 'd5', 'e4', 'e5'].includes(square);
+}
+
+function isOptimalDevelopmentMove(move: Move): boolean {
+  // Prioritize development of knights and bishops
+  if (['n', 'b'].includes(move.piece) && move.from.includes('1')) {
+    return true;
+  }
+  // Castle moves are good for development
+  if (move.flags.includes('k') || move.flags.includes('q')) {
+    return true;
+  }
+  return false;
+}
+
+// Add these new constants at the top
+const THREAT_VALUES = {
+  PIECE_THREATENED: -30,      // Piece is under attack
+  PIECE_DEFENDED: 15,        // Piece is defended
+  FORK_THREAT: -80,          // Potential fork
+  PIN_THREAT: -60,           // Potential pin
+  DISCOVERED_ATTACK: -50,    // Potential discovered attack
+  MATE_THREAT: -1000        // Potential mate threat
+};
+
+// Add these new evaluation functions
+function evaluateThreats(chess: ChessLibrary, forColor: 'w' | 'b'): number {
+  let threatScore = 0;
+  const board = chess.board();
+  const opponent = forColor === 'w' ? 'b' : 'w';
+
+  // Get all squares with pieces of the given color
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece && piece.color === forColor) {
+        const square = `${String.fromCharCode(97 + j)}${8 - i}`;
+        
+        // Check if piece is threatened
+        if (isSquareAttacked(chess, square, opponent)) {
+          threatScore += THREAT_VALUES.PIECE_THREATENED;
+          
+          // Higher penalty for undefended pieces
+          if (!isSquareDefended(chess, square, forColor)) {
+            threatScore += THREAT_VALUES.PIECE_THREATENED;
+          }
+        }
+        
+        // Check for potential forks
+        if (isPotentialFork(chess, square, opponent)) {
+          threatScore += THREAT_VALUES.FORK_THREAT;
+        }
+        
+        // Check for pins and discovered attacks
+        if (isPinned(chess, square, forColor)) {
+          threatScore += THREAT_VALUES.PIN_THREAT;
+        }
+      }
+    }
   }
 
-  const moves = chess.moves();
-  if (moves.length === 0) {
-    if (chess.isCheckmate()) return -Infinity * color;
-    return 0;
+  return threatScore;
+}
+
+// Add these helper functions
+function isSquareAttacked(chess: ChessLibrary, square: string, byColor: 'w' | 'b'): boolean {
+  try {
+    const moves = chess.moves({ verbose: true, square });
+    return moves.some(move => move.captured && move.color === byColor);
+  } catch {
+    return false;
   }
+}
+
+function isSquareDefended(chess: ChessLibrary, square: string, byColor: 'w' | 'b'): boolean {
+  try {
+    // Make a temporary move to capture the piece and see if it can be recaptured
+    const piece = chess.get(square);
+    if (!piece) return false;
+
+    const defenders = chess.moves({ verbose: true }).filter(move => 
+      move.to === square && move.color === byColor
+    );
+
+    return defenders.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function isPotentialFork(chess: ChessLibrary, square: string, byColor: 'w' | 'b'): boolean {
+  try {
+    const moves = chess.moves({ verbose: true, square });
+    for (const move of moves) {
+      chess.move(move);
+      const attackedPieces = getAttackedPieces(chess, byColor);
+      chess.undo();
+      
+      // If a move can attack multiple pieces, it's a potential fork
+      if (attackedPieces.length > 1) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function getAttackedPieces(chess: ChessLibrary, byColor: 'w' | 'b'): string[] {
+  const attacked: string[] = [];
+  const board = chess.board();
+  
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece && piece.color !== byColor) {
+        const square = `${String.fromCharCode(97 + j)}${8 - i}`;
+        if (isSquareAttacked(chess, square, byColor)) {
+          attacked.push(square);
+        }
+      }
+    }
+  }
+  
+  return attacked;
+}
+
+// Add future position analysis
+function evaluateFuturePosition(chess: ChessLibrary, color: 'w' | 'b', depth: number = 2): number {
+  if (depth === 0) return 0;
+
+  let bestScore = -INFINITY;
+  const moves = chess.moves({ verbose: true });
 
   for (const move of moves) {
     chess.move(move);
-    const score = -negamax(chess, depth - 1, -beta, -alpha, -color);
+    const score = -evaluateFuturePosition(chess, color === 'w' ? 'b' : 'w', depth - 1);
     chess.undo();
-    
-    if (score >= beta) return beta;
-    alpha = Math.max(alpha, score);
+
+    bestScore = Math.max(bestScore, score);
   }
-  
-  return alpha;
+
+  return bestScore * 0.5; // Discount future positions
 }
 
 export function Chess() {
@@ -340,42 +694,65 @@ export function Chess() {
   const aiMove = () => {
     try {
       if (chess.current.isGameOver()) {
-        console.log('Game is over');
+        console.log('Game is over, no move made');
         return;
       }
-  
-      const moves = chess.current.moves();
-      if (moves.length === 0) {
-        console.log('No legal moves');
+      
+      const legalMoves = chess.current.moves({ verbose: true });
+      if (legalMoves.length === 0) {
+        console.log('No legal moves available');
         return;
       }
-  
-      let bestMove = null;
-      let bestScore = -Infinity;
-  
-      // Simple one-ply search
-      for (const move of moves) {
-        chess.current.move(move);
-        const score = -evaluateBoard(chess.current);
-        chess.current.undo();
-  
-        if (score > bestScore) {
-          bestScore = score;
-          bestMove = move;
-        }
-      }
-  
-      if (bestMove) {
+      
+      const bestMove = findBestMove(chess.current, 3000);
+      
+      // Validate the move before attempting it
+      if (bestMove && isValidMove(chess.current, bestMove)) {
         chess.current.move(bestMove);
         updateBoard();
         console.log('AI moved:', bestMove);
+      } else {
+        // Fallback to a random legal move if bestMove is invalid
+        const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+        chess.current.move(randomMove);
+        updateBoard();
+        console.log('AI made fallback move:', randomMove);
       }
-  
     } catch (error) {
       console.error('AI move error:', error);
-      setStatus('AI move error occurred');
+      // Attempt recovery with a random legal move
+      try {
+        const legalMoves = chess.current.moves({ verbose: true });
+        if (legalMoves.length > 0) {
+          const recoveryMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+          chess.current.move(recoveryMove);
+          updateBoard();
+          console.log('AI recovery move:', recoveryMove);
+        }
+      } catch (recoveryError) {
+        console.error('Recovery failed:', recoveryError);
+        setStatus('AI move error occurred');
+      }
     }
   };
+
+  // Add this helper function to validate moves
+  function isValidMove(chess: ChessLibrary, move: Move): boolean {
+    try {
+      // Get all legal moves in the current position
+      const legalMoves = chess.moves({ verbose: true });
+      
+      // Check if the proposed move exists in legal moves
+      return legalMoves.some(legalMove => 
+        legalMove.from === move.from && 
+        legalMove.to === move.to && 
+        legalMove.promotion === move.promotion
+      );
+    } catch (error) {
+      console.error('Move validation error:', error);
+      return false;
+    }
+  }
 
   // Trigger AI move when it's AI's turn
   useEffect(() => {
@@ -407,6 +784,9 @@ export function Chess() {
     setStatus("Your turn! 🎮");
     setSelectedSquare(null);
     setWinner(null);
+    TranspositionTable.clear();
+    KillerMoves.fill([]);
+    HistoryTable.clear();
     console.log("Game has been reset.");
   };
 
