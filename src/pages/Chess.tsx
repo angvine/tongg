@@ -24,6 +24,36 @@ const ENDGAME_PIECE_VALUES = {
   k: 100
 };
 
+const PIECE_SQUARE_TABLES = {
+  p: [  // Pawn
+    [0,  0,  0,  0,  0,  0,  0,  0],
+    [50, 50, 50, 50, 50, 50, 50, 50],
+    [10, 10, 20, 30, 30, 20, 10, 10],
+    [5,  5, 10, 25, 25, 10,  5,  5],
+    [0,  0,  0, 20, 20,  0,  0,  0],
+    [5, -5,-10,  0,  0,-10, -5,  5],
+    [5, 10, 10,-20,-20, 10, 10,  5],
+    [0,  0,  0,  0,  0,  0,  0,  0]
+  ],
+  n: [  // Knight
+    [-50,-40,-30,-30,-30,-30,-40,-50],
+    [-40,-20,  0,  0,  0,  0,-20,-40],
+    [-30,  0, 10, 15, 15, 10,  0,-30],
+    [-30,  5, 15, 20, 20, 15,  5,-30],
+    [-30,  0, 15, 20, 20, 15,  0,-30],
+    [-30,  5, 10, 15, 15, 10,  5,-30],
+    [-40,-20,  0,  5,  5,  0,-20,-40],
+    [-50,-40,-30,-30,-30,-30,-40,-50]
+  ]
+  // Add more piece square tables as needed
+};
+
+const OPENING_BOOK = {
+  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -': ['e2e4', 'd2d4', 'c2c4'], // Initial position
+  'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3': ['e7e5', 'c7c5', 'e7e6'], // After 1.e4
+  // Add more opening positions as needed
+};
+
 // Board position evaluation bonuses
 const POSITION_BONUSES = {
   p: [  // Pawn position bonuses
@@ -77,55 +107,98 @@ const quiescenceSearch = (chess: ChessLibrary, alpha: number, beta: number, dept
   return alpha;
 };
 
-// Simplified evaluation function
+// Improved evaluation function
 function evaluateBoard(chess: ChessLibrary): number {
-  try {
-    let score = 0;
-    const board = chess.board();
-    
-    // Material evaluation
-    board.forEach((row) => {
-      row.forEach((piece) => {
-        if (piece) {
-          const value = PIECE_VALUES[piece.type] || 0;
-          score += piece.color === 'w' ? value : -value;
-        }
-      });
-    });
-
-    // Basic position evaluation
-    score += chess.moves().length * 0.1;
-    
-    // Checkmate detection
-    if (chess.isCheckmate()) {
-      return chess.turn() === 'w' ? -20000 : 20000;
-    }
-    
-    return score;
-  } catch (error) {
-    console.error('Evaluation error:', error);
+  if (chess.isCheckmate()) {
+    return chess.turn() === 'w' ? -20000 : 20000;
+  }
+  
+  if (chess.isDraw() || chess.isStalemate()) {
     return 0;
   }
+
+  let score = 0;
+  const board = chess.board();
+  const isEndgamePhase = isEndgame(chess);
+  
+  // Material and position evaluation
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece) {
+        // Base material value
+        const pieceValue = isEndgamePhase ? 
+          ENDGAME_PIECE_VALUES[piece.type] : 
+          PIECE_VALUES[piece.type];
+        
+        // Position value
+        const positionValue = PIECE_SQUARE_TABLES[piece.type] ?
+          PIECE_SQUARE_TABLES[piece.type][piece.color === 'w' ? i : 7 - i][j] * 0.1 :
+          0;
+        
+        const value = pieceValue + positionValue;
+        score += piece.color === 'w' ? value : -value;
+        
+        // Add mobility evaluation
+        score += piece.color === 'w' ? 
+          evaluatePieceMobility(chess, `${String.fromCharCode(97 + j)}${8 - i}`, piece) :
+          -evaluatePieceMobility(chess, `${String.fromCharCode(97 + j)}${8 - i}`, piece);
+      }
+    }
+  }
+
+  return score;
 }
 
+// Improved move ordering for better alpha-beta pruning
+function orderMoves(chess: ChessLibrary, moves: Move[]): Move[] {
+  return moves.sort((a, b) => {
+    let scoreA = 0;
+    let scoreB = 0;
+    
+    // Capturing moves
+    if (a.captured) {
+      scoreA += PIECE_VALUES[a.captured] - PIECE_VALUES[a.piece];
+    }
+    if (b.captured) {
+      scoreB += PIECE_VALUES[b.captured] - PIECE_VALUES[b.piece];
+    }
+    
+    // Promotion moves
+    if (a.promotion) scoreA += PIECE_VALUES[a.promotion];
+    if (b.promotion) scoreB += PIECE_VALUES[b.promotion];
+    
+    // Check moves
+    if (a.san.includes('+')) scoreA += 50;
+    if (b.san.includes('+')) scoreB += 50;
+    
+    return scoreB - scoreA;
+  });
+}
+
+// Update findBestMove to use move ordering
 function findBestMove(chess: ChessLibrary, depth: number = 4): Move {
   const moves = chess.moves({ verbose: true });
-  let bestMove = moves[0];
+  const orderedMoves = orderMoves(chess, moves);
+  let bestMove = orderedMoves[0];
   let bestScore = -Infinity;
+  let alpha = -Infinity;
+  const beta = Infinity;
   
   // Opening book check
   const bookMove = getOpeningBookMove(chess);
   if (bookMove) return bookMove;
 
-  for (const move of moves) {
+  for (const move of orderedMoves) {
     chess.move(move);
-    const score = -negamax(chess, depth - 1, -Infinity, Infinity, -1);
+    const score = -negamax(chess, depth - 1, -beta, -alpha, -1);
     chess.undo();
 
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
     }
+    alpha = Math.max(alpha, bestScore);
   }
 
   return bestMove;

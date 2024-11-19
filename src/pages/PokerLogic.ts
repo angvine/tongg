@@ -218,4 +218,48 @@ export class PokerLogic {
   calculateCallAmount(currentBet: number, playerBet: number): number {
     return Math.max(0, currentBet - playerBet);
   }
+
+  // Add new method to calculate hand equity
+  calculateHandEquity(hand: Card[], communityCards: Card[]): number {
+    const remainingCards = this.createDeck().filter(card => 
+      !hand.some(h => h.value === card.value && h.suit === card.suit) &&
+      !communityCards.some(c => c.value === card.value && c.suit === card.suit)
+    );
+    
+    let wins = 0;
+    const iterations = 100; // Monte Carlo simulation iterations
+    
+    for (let i = 0; i < iterations; i++) {
+      const shuffledRemaining = this.shuffleDeck([...remainingCards]);
+      const neededCommunity = 5 - communityCards.length;
+      const simulatedCommunity = [...communityCards, ...shuffledRemaining.slice(0, neededCommunity)];
+      const opponentHand = [shuffledRemaining[neededCommunity], shuffledRemaining[neededCommunity + 1]];
+      
+      const playerHand = this.evaluateHand([...hand, ...simulatedCommunity]);
+      const oppHand = this.evaluateHand([...opponentHand, ...simulatedCommunity]);
+      
+      if (playerHand.rank > oppHand.rank || 
+          (playerHand.rank === oppHand.rank && 
+           this.compareKickers(playerHand.kickers, oppHand.kickers) > 0)) {
+        wins++;
+      }
+    }
+    
+    return wins / iterations;
+  }
+
+  // Add position evaluator
+  evaluatePosition(position: 'early' | 'middle' | 'late', gameStage: GameStage): number {
+    const positionValues = {
+      early: { preflop: 0.7, flop: 0.8, turn: 0.9, river: 1 },
+      middle: { preflop: 0.8, flop: 0.9, turn: 1, river: 1 },
+      late: { preflop: 1, flop: 1, turn: 1, river: 1 }
+    };
+    return positionValues[position][gameStage] || 1;
+  }
+
+  // Add pot odds calculator
+  calculatePotOdds(callAmount: number, potSize: number): number {
+    return callAmount / (potSize + callAmount);
+  }
 }

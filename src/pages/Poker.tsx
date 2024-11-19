@@ -78,23 +78,33 @@ export function Poker() {
     setIsPlayerTurn(false);
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const aiCanCheck = currentBet === aiBet;
+    const aiCards = aiHand.map(card => ({...card, hidden: false}));
     const callAmount = currentBet - aiBet;
     const lastRaiseSize = currentBet - Math.min(playerBet, aiBet);
     const minRaise = Math.max(currentBet + lastRaiseSize, 20);
     const maxRaise = aiChips + aiBet;
+
+    // Calculate hand equity
+    const handEquity = poker.calculateHandEquity(aiCards, communityCards);
     
-    // Calculate hand strength and potential
-    const aiVisibleCards = [...aiHand.map(card => ({...card, hidden: false})), ...communityCards];
-    const handStrength = poker.evaluateHand(aiVisibleCards).rank;
-    const potOdds = callAmount / (pot + callAmount);
+    // Calculate pot odds
+    const potOdds = poker.calculatePotOdds(callAmount, pot);
+    
+    // Position evaluation
     const position = gameStage === 'preflop' ? 'early' : 'late';
+    const positionMultiplier = poker.evaluatePosition(position, gameStage);
     
-    // Enhanced decision making based on game stage
+    // Stack size considerations
+    const effectiveStack = Math.min(aiChips, playerChips);
+    const stackToPotRatio = effectiveStack / pot;
+    
+    // Final decision making
+    const decisionThreshold = handEquity * positionMultiplier;
+
     if (gameStage === 'river') {
       if (riverRaises >= 2) {
-        // If already raised twice, only call or fold
-        if (handStrength >= 4 || potOdds < 0.3) {
+        // If already raised twice on river, be more cautious
+        if (handEquity > 0.8 || (handEquity > 0.6 && potOdds < 0.2)) {
           handleAIAction('call');
         } else {
           handleAIAction('fold');
@@ -103,62 +113,35 @@ export function Poker() {
       }
     }
 
-    if (gameStage === 'preflop') {
-      // Preflop strategy
-      const hasAce = aiHand.some(card => card.value === 'A');
-      const hasKing = aiHand.some(card => card.value === 'K');
-      const hasHighPair = aiHand[0].value === aiHand[1].value && 
-        ['A', 'K', 'Q', 'J', '10'].includes(aiHand[0].value);
-      
-      if (hasHighPair || (hasAce && hasKing)) {
-        // Strong starting hand - raise
-        handleAIAction('raise', Math.min(pot * 2, maxRaise));
-      } else if (hasAce || hasKing) {
-        // Decent hand - call or small raise
-        if (callAmount <= aiChips * 0.1) handleAIAction('call');
-        else handleAIAction('fold');
-      } else {
-        // Weak hand - check or fold
-        if (aiCanCheck) handleAIAction('check');
-        else if (callAmount <= 20) handleAIAction('call');
-        else handleAIAction('fold');
-      }
-    } else {
-      // Post-flop strategy
-      const strengthThreshold = {
-        flop: 2,   // Pair or better
-        turn: 3,   // Three of a kind or better
-        river: 4   // Straight or better
-      }[gameStage] || 2;
-
-      if (handStrength >= strengthThreshold) {
-        // Strong hand
-        const raiseAmount = Math.min(pot * (handStrength / 2), maxRaise);
-        if (raiseAmount >= minRaise) {
-          handleAIAction('raise', raiseAmount);
-        } else {
-          handleAIAction('call');
-        }
-      } else if (handStrength >= strengthThreshold - 1) {
-        // Medium strength hand
-        if (potOdds < 0.3) {
-          if (aiCanCheck) handleAIAction('check');
-          else handleAIAction('call');
-        } else {
-          if (callAmount <= aiChips * 0.15) handleAIAction('call');
-          else handleAIAction('fold');
-        }
-      } else {
-        // Weak hand
-        if (aiCanCheck) {
-          handleAIAction('check');
-        } else if (potOdds < 0.2 && callAmount <= aiChips * 0.1) {
-          handleAIAction('call');
-        } else {
-          handleAIAction('fold');
-        }
+    // Aggressive play with strong hands
+    if (decisionThreshold > 0.8) {
+      const raiseAmount = Math.min(
+        pot * (handEquity * 2), // Size raise based on hand strength
+        maxRaise
+      );
+      if (raiseAmount >= minRaise) {
+        handleAIAction('raise', raiseAmount);
+        return;
       }
     }
+
+    // Semi-bluff with drawing hands
+    if (decisionThreshold > 0.4 && stackToPotRatio > 3) {
+      if (Math.random() < handEquity) { // Bluff frequency based on hand strength
+        const bluffAmount = Math.min(pot * 0.6, maxRaise);
+        handleAIAction('raise', bluffAmount);
+        return;
+      }
+    }
+
+    // Call with medium strength hands if odds are good
+    if (decisionThreshold > potOdds) {
+      handleAIAction('call');
+      return;
+    }
+
+    // Default to folding
+    handleAIAction('fold');
   };
 
   const handleAIAction = (action: 'check' | 'call' | 'raise' | 'fold', raiseAmount?: number) => {
