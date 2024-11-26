@@ -26,7 +26,7 @@ function ErrorBoundaryError({ error }: { error: unknown }) {
 // In src/components/Root.tsx
 export function Root() {
   return (
-    <TonConnectUIProvider manifestUrl="https://ton.games/tonconnect-manifest.json">
+    <TonConnectUIProvider manifestUrl="https://games.ton.gg/tonconnect-manifest.json">
       <App />
     </TonConnectUIProvider>
   );

@@ -70,15 +70,18 @@ export function GameHub() {
           <Text as="h1" className={styles.title}>✨ TON Good Games ✨</Text>
         </header>
 
-        {!wallet ? (
-          <div className={styles.connectButtonWrapper}>
-            <TonConnectButton className={styles.connectButton} />
-          </div>
-        ) : (
-          <Text className={styles.walletInfo}>
-            Connected: {wallet.account.address}
-          </Text>
-        )}
+        <div>
+          {!wallet ? (
+            <div className={styles.connectButtonWrapper}>
+              <TonConnectButton className={styles.connectButton} />
+            </div>
+          ) : (
+            <Text className={styles.walletInfo}>
+              Connected: {wallet.account.address}
+            </Text>
+          )}
+          {/* Rest of your component */}
+        </div>
         
         {/* Game cards grid */}
         <div className={styles.gameGrid}>

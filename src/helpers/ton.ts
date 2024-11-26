@@ -4,14 +4,27 @@ import { useTonConnect } from '@tonconnect/ui-react';
 
 const client = new TonClient({
   endpoint: 'https://toncenter.com/api/v2/jsonRPC',
-  apiKey: 'YOUR_TONCENTER_API_KEY', // Toncenter에서 발급받은 API 키를 입력하세요
+  apiKey: '73d5701dadec580a9bb59baecd8b36c57bab9eb21beb8aaa30d0bee19674da08', // Replace with your actual Toncenter API key
 });
 
 export async function sendGameResult(gameId: string, score: number) {
   const { wallet } = useTonConnect();
   if (!wallet) return;
 
-  // ...기존 코드...
+  // Construct the transaction payload
+  const payload = {
+    // Your smart contract method and parameters
+  };
 
-  // 게임 결과를 스마트 컨트랙트에 전송하는 구현
+  // Send the transaction using the wallet
+  await wallet.sendTransaction({
+    validUntil: Date.now() + 5 * 60 * 1000, // Transaction validity time
+    messages: [
+      {
+        address: 'SMART_CONTRACT_ADDRESS', // Replace with your smart contract address
+        amount: '1000000', // Amount in nanotons (adjust as needed)
+        payload, // The payload constructed above
+      },
+    ],
+  });
 }
