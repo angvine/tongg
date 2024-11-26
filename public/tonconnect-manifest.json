@@ -1,7 +1,7 @@
 {
-  "url": "https://games.ton.gg", 
-  "name": "TON Good Games",
+  "url": "https://games.ton.gg",
+  "name": "TONGoodGames",
   "iconUrl": "https://games.ton.gg/logo.png",
-  "termsOfUsePath": "terms-of-use",
-  "privacyPolicyPath": "privacy-policy"
+  "termsOfUsePath": "https://telegram.org/tos",
+  "privacyPolicyPath": "https://telegram.org/privacy-tpa"
 }

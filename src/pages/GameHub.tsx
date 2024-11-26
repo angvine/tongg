@@ -3,7 +3,7 @@ import { Page } from '@/components/Page.tsx';
 import { Button, Card, Text } from '@telegram-apps/telegram-ui';
 import { useNavigate } from 'react-router-dom';
 import styles from './GameHub.module.css';
-import { TonConnectButton, useTonWallet, TonConnectUIProvider } from '@tonconnect/ui-react';
+import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
 import { useState } from 'react';
 
 export function GameHub() {
@@ -123,13 +123,5 @@ export function GameHub() {
         </div>
       </div>
     </Page>
-  );
-}
-
-function Root() {
-  return (
-    <TonConnectUIProvider manifestUrl="https://ton.games/tonconnect-manifest.json">
-      <App />
-    </TonConnectUIProvider>
   );
 }

@@ -1,15 +1,9 @@
+import React from 'react';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 
-// Make sure your manifest is accessible via HTTPS
-const manifestUrl = "https://games.ton.gg/tonconnect-manifest.json";
-
-const manifest = {
-  "url": "https://games.ton.gg",
-  "name": "TON Good Games",
-  "iconUrl": "https://games.ton.gg/icon.png"
-};
+const manifestUrl = 'https://games.ton.gg/tonconnect-manifest.json'; // Replace with your actual manifest URL
 
 export function App() {
   return (
@@ -18,3 +12,5 @@ export function App() {
     </TonConnectUIProvider>
   );
 }
+
+export default App;
