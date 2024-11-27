@@ -118,7 +118,7 @@
   margin: 0 auto;
   width: 90%;                            /* Reduced from 95% */
   max-width: 240px;                      /* Reduced from 300px */
-  min-height: 90px;                      /* Reduced from 110px */
+  min-height: 120px;                     /* Increased from 90px */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -129,20 +129,20 @@
 
 .hand {
   display: flex;
-  gap: 4px;
+  gap: 8px;                            /* Increased from 4px */
   justify-content: center;
   flex-wrap: nowrap;      /* Prevent wrapping */
 }
 
 .card {
-  width: 35px;                           /* Reduced from 40px */
-  height: 48px;                          /* Reduced from 56px */
+  width: 60px;                         /* Increased from 35px */
+  height: 80px;                        /* Increased from 48px */
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
   border-radius: 4px;                    /* Reduced from 6px */
-  font-size: 16px;                       /* Increased from 14px */
+  font-size: 24px;                       /* Increased from 16px */
   font-weight: 800;                      /* Increased from 700 */
   letter-spacing: -0.5px;                /* Tighter letter spacing */
   color: #000000;                        /* Default black color for cards */
@@ -290,16 +290,20 @@
 }
 
 .controls button {
-  min-width: 60px;                       /* Reduced from 70px */
-  padding: 6px 12px;                     /* Reduced from 8px 16px */
-  border-radius: 6px;                    /* Reduced from 8px */
-  font-size: 13px;                       /* Reduced from 14px */
+  min-width: 70px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.9);
   color: var(--ton-blue-dark);
   border: none;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .controls button:hover {
@@ -333,6 +337,9 @@
   color: var(--gold);
   border: 1px solid rgba(255, 215, 0, 0.3);
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .gameStage {
@@ -411,6 +418,10 @@
   font-size: 12px;                       /* Reduced from 13px */
   color: var(--gold);
   border: 1px solid rgba(255, 215, 0, 0.3);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .aiSpeechBubble {
@@ -428,6 +439,9 @@
   z-index: 2;
   animation: fadeIn 0.3s ease-out;
   white-space: nowrap;  /* Keep text in one line */
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .aiSpeechBubble::after {
