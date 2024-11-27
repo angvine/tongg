@@ -12,7 +12,7 @@ export type HandRank = {
   rank: number;
   name: string;
   cards: Card[];
-  kickers?: Card[];
+  kickers: Card[];
 };
 
 export class PokerLogic {
@@ -40,14 +40,18 @@ export class PokerLogic {
       rank: -1,
       name: '',
       cards: [],
-      kickers: [] as Card[]
+      kickers: [],
     };
 
     for (const combo of combinations) {
-      const currentHand = this.evaluateSingleHand(combo);
-      if (currentHand.rank > bestHand.rank || 
-          (currentHand.rank === bestHand.rank && this.compareKickers(currentHand.kickers, bestHand.kickers) > 0)) {
-        bestHand = currentHand;
+      const evaluatedHand = this.evaluateSingleHand(combo);
+      if (evaluatedHand.rank > bestHand.rank) {
+        bestHand = evaluatedHand;
+      } else if (evaluatedHand.rank === bestHand.rank) {
+        const comparison = this.compareKickers(evaluatedHand.kickers, bestHand.kickers);
+        if (comparison > 0) {
+          bestHand = evaluatedHand;
+        }
       }
     }
 
@@ -55,28 +59,95 @@ export class PokerLogic {
   }
 
   private compareKickers(kickers1: Card[], kickers2: Card[]): number {
-    for (let i = 0; i < kickers1.length; i++) {
+    const length = Math.min(kickers1.length, kickers2.length);
+    for (let i = 0; i < length; i++) {
       const value1 = this.VALUES[kickers1[i].value];
       const value2 = this.VALUES[kickers2[i].value];
-      if (value1 !== value2) return value1 - value2;
+      if (value1 > value2) return 1;
+      if (value1 < value2) return -1;
     }
     return 0;
   }
 
-  private evaluateSingleHand(cards: Card[]): HandRank & { kickers: Card[] } {
-    if (cards.length !== 5) throw new Error('Invalid hand size');
+  private evaluateSingleHand(cards: Card[]): HandRank {
+    if (cards.length !== 5) {
+      throw new Error('Hand must contain exactly 5 cards');
+    }
 
     const sortedCards = [...cards].sort((a, b) => this.VALUES[b.value] - this.VALUES[a.value]);
-    
-    if (this.isStraightFlush(cards)) return { rank: 8, name: 'Straight Flush', cards, kickers: sortedCards };
-    if (this.isFourOfAKind(cards)) return { rank: 7, name: 'Four of a Kind', cards, kickers: this.getKickers(cards, 4) };
-    if (this.isFullHouse(cards)) return { rank: 6, name: 'Full House', cards, kickers: this.getFullHouseKickers(cards) };
-    if (this.isFlush(cards)) return { rank: 5, name: 'Flush', cards, kickers: sortedCards };
-    if (this.isStraight(cards)) return { rank: 4, name: 'Straight', cards, kickers: sortedCards };
-    if (this.isThreeOfAKind(cards)) return { rank: 3, name: 'Three of a Kind', cards, kickers: this.getKickers(cards, 3) };
-    if (this.isTwoPair(cards)) return { rank: 2, name: 'Two Pair', cards, kickers: this.getTwoPairKickers(cards) };
-    if (this.isPair(cards)) return { rank: 1, name: 'Pair', cards, kickers: this.getKickers(cards, 2) };
-    return { rank: 0, name: 'High Card', cards, kickers: sortedCards };
+    const valueCounts = this.getValueCounts(cards);
+    const uniqueValues = Object.keys(valueCounts).length;
+
+    if (this.isStraightFlush(cards)) {
+      return { rank: 8, name: 'Straight Flush', cards: sortedCards, kickers: [] };
+    }
+
+    if (this.isFourOfAKind(cards)) {
+      const fourValue = Object.keys(valueCounts).find(value => valueCounts[value] === 4)!;
+      const kicker = sortedCards.find(card => card.value !== fourValue)!;
+      return {
+        rank: 7,
+        name: 'Four of a Kind',
+        cards: sortedCards.filter(card => card.value === fourValue),
+        kickers: [kicker],
+      };
+    }
+
+    if (this.isFullHouse(cards)) {
+      const threeValue = Object.keys(valueCounts).find(value => valueCounts[value] === 3)!;
+      const pairValue = Object.keys(valueCounts).find(value => valueCounts[value] === 2)!;
+      return {
+        rank: 6,
+        name: 'Full House',
+        cards: sortedCards.filter(card => card.value === threeValue || card.value === pairValue),
+        kickers: [],
+      };
+    }
+
+    if (this.isFlush(cards)) {
+      return { rank: 5, name: 'Flush', cards: sortedCards, kickers: [] };
+    }
+
+    if (this.isStraight(cards)) {
+      return { rank: 4, name: 'Straight', cards: sortedCards, kickers: [] };
+    }
+
+    if (this.isThreeOfAKind(cards)) {
+      const threeValue = Object.keys(valueCounts).find(value => valueCounts[value] === 3)!;
+      const kickers = sortedCards.filter(card => card.value !== threeValue);
+      return {
+        rank: 3,
+        name: 'Three of a Kind',
+        cards: sortedCards.filter(card => card.value === threeValue),
+        kickers: kickers,
+      };
+    }
+
+    if (this.isTwoPair(cards)) {
+      const pairValues = Object.keys(valueCounts)
+        .filter(value => valueCounts[value] === 2)
+        .sort((a, b) => this.VALUES[b] - this.VALUES[a]);
+      const kickers = sortedCards.filter(card => !pairValues.includes(card.value));
+      return {
+        rank: 2,
+        name: 'Two Pair',
+        cards: sortedCards.filter(card => pairValues.includes(card.value)),
+        kickers: kickers,
+      };
+    }
+
+    if (this.isPair(cards)) {
+      const pairValue = Object.keys(valueCounts).find(value => valueCounts[value] === 2)!;
+      const kickers = sortedCards.filter(card => card.value !== pairValue);
+      return {
+        rank: 1,
+        name: 'Pair',
+        cards: sortedCards.filter(card => card.value === pairValue),
+        kickers: kickers,
+      };
+    }
+
+    return { rank: 0, name: 'High Card', cards: sortedCards, kickers: sortedCards };
   }
 
   private getFullHouseKickers(cards: Card[]): Card[] {
