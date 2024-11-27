@@ -17,7 +17,7 @@ export type HandRank = {
 
 export class PokerLogic {
   private readonly VALUES = {
-    '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8,
+    '2': 2, '3': 3, '4': 5, '5': 5, '6': 6, '7': 7, '8': 8,
     '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14
   };
 
@@ -69,13 +69,21 @@ export class PokerLogic {
   }
 
   private compareKickers(kickers1: Card[], kickers2: Card[]): number {
-    for (let i = 0; i < Math.max(kickers1.length, kickers2.length); i++) {
-      const value1 = kickers1[i] ? this.VALUES[kickers1[i].value] : 0;
-      const value2 = kickers2[i] ? this.VALUES[kickers2[i].value] : 0;
+    // Sort kickers by value in descending order
+    const sortedKickers1 = [...kickers1].sort((a, b) => this.VALUES[b.value] - this.VALUES[a.value]);
+    const sortedKickers2 = [...kickers2].sort((a, b) => this.VALUES[b.value] - this.VALUES[a.value]);
+
+    // Compare each kicker in order until a difference is found
+    const maxLength = Math.max(sortedKickers1.length, sortedKickers2.length);
+    for (let i = 0; i < maxLength; i++) {
+      const value1 = sortedKickers1[i] ? this.VALUES[sortedKickers1[i].value] : 0;
+      const value2 = sortedKickers2[i] ? this.VALUES[sortedKickers2[i].value] : 0;
+      
       if (value1 > value2) return 1;
       if (value1 < value2) return -1;
     }
-    return 0;
+
+    return 0; // All kickers are equal
   }
 
   private evaluateSingleHand(cards: Card[]): HandRank {
@@ -154,7 +162,9 @@ export class PokerLogic {
     if (this.hasNOfAKind(valueCounts, 2)) {
       const pairValue = this.getNOfAKindValues(valueCounts, 2)[0];
       const mainCards = sortedCards.filter((card) => card.value === pairValue);
-      const kickers = sortedCards.filter((card) => card.value !== pairValue);
+      const kickers = sortedCards
+        .filter((card) => card.value !== pairValue)
+        .sort((a, b) => this.VALUES[b.value] - this.VALUES[a.value]);
       return {
         rank: 2,
         name: 'One Pair',
@@ -162,15 +172,27 @@ export class PokerLogic {
         kickers: kickers,
       };
     }
+    // High card case - Include all cards as kickers except the highest card
     return {
       rank: 1,
       name: 'High Card',
       cards: [sortedCards[0]],
-      kickers: sortedCards.slice(1),
+      kickers: sortedCards.slice(1).sort((a, b) => this.VALUES[b.value] - this.VALUES[a.value]),
     };
   }
 
   private compareHands(hand1: HandRank, hand2: HandRank): number {
+    if (hand1.rank !== hand2.rank) {
+      return hand1.rank - hand2.rank;
+    }
+
+    // For high card, compare all remaining cards as kickers
+    if (hand1.rank === 1) {
+      const allCards1 = [...hand1.cards, ...hand1.kickers];
+      const allCards2 = [...hand2.cards, ...hand2.kickers];
+      return this.compareKickers(allCards1, allCards2);
+    }
+
     // Compare the main cards in the hand (e.g., pair, three of a kind)
     for (let i = 0; i < hand1.cards.length; i++) {
       const value1 = this.VALUES[hand1.cards[i].value];
